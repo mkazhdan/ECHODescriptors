@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{68E46D49-FF4B-337F-9909-E8CC0C457A5D}</ProjectGuid>
+    <RootNamespace>Core</RootNamespace>
+    <Keyword>Qt4VSv1.0</Keyword>
+    <ProjectName>OpenMesh_Core</ProjectName>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v142</PlatformToolset>
+    <UseOfMfc>false</UseOfMfc>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v142</PlatformToolset>
+    <UseOfMfc>false</UseOfMfc>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v142</PlatformToolset>
+    <UseOfMfc>false</UseOfMfc>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v142</PlatformToolset>
+    <UseOfMfc>false</UseOfMfc>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>16.0.30523.133</_ProjectFileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>.\</OutDir>
+    <IntDir>tmp\Windows_32_Debug\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)\Bin\$(Platform)\</OutDir>
+    <IntDir>$(SolutionDir)\Obj\$(Platform)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Midl>
+      <WarningLevel>0</WarningLevel>
+      <DefaultCharType>Unsigned</DefaultCharType>
+      <EnableErrorChecks>None</EnableErrorChecks>
+    </Midl>
+    <ClCompile>
+      <AdditionalOptions>-Zm200 -w34100 -w34189 -Zm200 -w34100 -w34189 -w34100 -w34189 %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>UNICODE;WIN32;QT_LARGEFILE_SUPPORT;_USE_MATH_DEFINES;NOMINMAX;QT_THREAD_SUPPORT;QT_WEBKIT_LIB;QT_SCRIPT_LIB;QT_SQL_LIB;QT_XML_LIB;QT_OPENGL_LIB;QT_GUI_LIB;QT_NETWORK_LIB;QT_CORE_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessToFile>false</PreprocessToFile>
+      <PreprocessSuppressLineNumbers>false</PreprocessSuppressLineNumbers>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <TreatWChar_tAsBuiltInType>false</TreatWChar_tAsBuiltInType>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <AssemblerListingLocation>tmp\Windows_32_Debug\</AssemblerListingLocation>
+      <ObjectFileName>tmp\Windows_32_Debug\</ObjectFileName>
+      <ProgramDataBaseFileName>.\</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>UNICODE;WIN32;QT_LARGEFILE_SUPPORT;_USE_MATH_DEFINES;NOMINMAX;QT_THREAD_SUPPORT;QT_WEBKIT_LIB;QT_SCRIPT_LIB;QT_SQL_LIB;QT_XML_LIB;QT_OPENGL_LIB;QT_GUI_LIB;QT_NETWORK_LIB;QT_CORE_LIB;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>$(SolutionDir)\lib\libOpenMeshCored.lib</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <WarningLevel>0</WarningLevel>
+      <DefaultCharType>Unsigned</DefaultCharType>
+      <EnableErrorChecks>None</EnableErrorChecks>
+    </Midl>
+    <ClCompile>
+      <AdditionalOptions>-Zm200 -w34100 -w34189 -Zm200 -w34100 -w34189 -w34100 -w34189 %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>UNICODE;WIN32;QT_LARGEFILE_SUPPORT;_USE_MATH_DEFINES;NOMINMAX;QT_THREAD_SUPPORT;QT_WEBKIT_LIB;QT_SCRIPT_LIB;QT_SQL_LIB;QT_XML_LIB;QT_OPENGL_LIB;QT_GUI_LIB;QT_NETWORK_LIB;QT_CORE_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessToFile>false</PreprocessToFile>
+      <PreprocessSuppressLineNumbers>false</PreprocessSuppressLineNumbers>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <TreatWChar_tAsBuiltInType>false</TreatWChar_tAsBuiltInType>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <AssemblerListingLocation>tmp\Windows_32_Debug\</AssemblerListingLocation>
+      <ObjectFileName>tmp\Windows_32_Debug\</ObjectFileName>
+      <ProgramDataBaseFileName>.\</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>UNICODE;WIN32;QT_LARGEFILE_SUPPORT;_USE_MATH_DEFINES;NOMINMAX;QT_THREAD_SUPPORT;QT_WEBKIT_LIB;QT_SCRIPT_LIB;QT_SQL_LIB;QT_XML_LIB;QT_OPENGL_LIB;QT_GUI_LIB;QT_NETWORK_LIB;QT_CORE_LIB;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>$(SolutionDir)\lib\libOpenMeshCored.lib</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Midl>
+      <WarningLevel>0</WarningLevel>
+      <DefaultCharType>Unsigned</DefaultCharType>
+      <EnableErrorChecks>None</EnableErrorChecks>
+    </Midl>
+    <ClCompile>
+      <AdditionalOptions>-Zm200 -w34100 -w34189 -Zm200 -w34100 -w34189 -w34100 -w34189 %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>MaxSpeed</Optimization>
+      <AdditionalIncludeDirectories>..\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>QT_NO_DEBUG;NDEBUG;UNICODE;WIN32;QT_LARGEFILE_SUPPORT;_USE_MATH_DEFINES;NOMINMAX;QT_THREAD_SUPPORT;QT_NO_DEBUG;QT_WEBKIT_LIB;QT_SCRIPT_LIB;QT_SQL_LIB;QT_XML_LIB;QT_OPENGL_LIB;QT_GUI_LIB;QT_NETWORK_LIB;QT_CORE_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessToFile>false</PreprocessToFile>
+      <PreprocessSuppressLineNumbers>false</PreprocessSuppressLineNumbers>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <TreatWChar_tAsBuiltInType>false</TreatWChar_tAsBuiltInType>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <AssemblerListingLocation>tmp\Windows_32_Release\</AssemblerListingLocation>
+      <ObjectFileName>tmp\Windows_32_Release\</ObjectFileName>
+      <ProgramDataBaseFileName>.\</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat />
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>QT_NO_DEBUG;NDEBUG;UNICODE;WIN32;QT_LARGEFILE_SUPPORT;_USE_MATH_DEFINES;NOMINMAX;QT_THREAD_SUPPORT;QT_NO_DEBUG;QT_WEBKIT_LIB;QT_SCRIPT_LIB;QT_SQL_LIB;QT_XML_LIB;QT_OPENGL_LIB;QT_GUI_LIB;QT_NETWORK_LIB;QT_CORE_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <WarningLevel>0</WarningLevel>
+      <DefaultCharType>Unsigned</DefaultCharType>
+      <EnableErrorChecks>None</EnableErrorChecks>
+    </Midl>
+    <ClCompile>
+      <AdditionalOptions>-Zm200 -w34100 -w34189 -Zm200 -w34100 -w34189 -w34100 -w34189 %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>MaxSpeed</Optimization>
+      <AdditionalIncludeDirectories>..\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>QT_NO_DEBUG;NDEBUG;UNICODE;WIN32;QT_LARGEFILE_SUPPORT;_USE_MATH_DEFINES;NOMINMAX;QT_THREAD_SUPPORT;QT_NO_DEBUG;QT_WEBKIT_LIB;QT_SCRIPT_LIB;QT_SQL_LIB;QT_XML_LIB;QT_OPENGL_LIB;QT_GUI_LIB;QT_NETWORK_LIB;QT_CORE_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessToFile>false</PreprocessToFile>
+      <PreprocessSuppressLineNumbers>false</PreprocessSuppressLineNumbers>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <TreatWChar_tAsBuiltInType>false</TreatWChar_tAsBuiltInType>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <AssemblerListingLocation>tmp\Windows_32_Release\</AssemblerListingLocation>
+      <ObjectFileName>tmp\Windows_32_Release\</ObjectFileName>
+      <ProgramDataBaseFileName>.\</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>QT_NO_DEBUG;NDEBUG;UNICODE;WIN32;QT_LARGEFILE_SUPPORT;_USE_MATH_DEFINES;NOMINMAX;QT_THREAD_SUPPORT;QT_NO_DEBUG;QT_WEBKIT_LIB;QT_SCRIPT_LIB;QT_SQL_LIB;QT_XML_LIB;QT_OPENGL_LIB;QT_GUI_LIB;QT_NETWORK_LIB;QT_CORE_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="IO\BinaryHelper.cc" />
+    <ClCompile Include="IO\IOManager.cc" />
+    <ClCompile Include="IO\OMFormat.cc" />
+    <ClCompile Include="IO\reader\BaseReader.cc" />
+    <ClCompile Include="IO\reader\OBJReader.cc" />
+    <ClCompile Include="IO\reader\OFFReader.cc" />
+    <ClCompile Include="IO\reader\OMReader.cc" />
+    <ClCompile Include="IO\reader\PLYReader.cc" />
+    <ClCompile Include="IO\reader\STLReader.cc" />
+    <ClCompile Include="IO\writer\BaseWriter.cc" />
+    <ClCompile Include="IO\writer\OBJWriter.cc" />
+    <ClCompile Include="IO\writer\OFFWriter.cc" />
+    <ClCompile Include="IO\writer\OMWriter.cc" />
+    <ClCompile Include="IO\writer\PLYWriter.cc" />
+    <ClCompile Include="IO\writer\STLWriter.cc" />
+    <ClCompile Include="Mesh\ArrayKernel.cc" />
+    <ClCompile Include="Mesh\BaseKernel.cc" />
+    <ClCompile Include="Mesh\PolyConnectivity.cc" />
+    <ClCompile Include="Mesh\TriConnectivity.cc" />
+    <ClCompile Include="System\omstream.cc" />
+    <ClCompile Include="Utils\BaseProperty.cc" />
+    <ClCompile Include="Utils\Endian.cc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Geometry\Config.hh" />
+    <ClInclude Include="Geometry\LoopSchemeMaskT.hh" />
+    <ClInclude Include="Geometry\MathDefs.hh" />
+    <ClInclude Include="Geometry\Plane3d.hh" />
+    <ClInclude Include="Geometry\QuadricT.hh" />
+    <ClInclude Include="Geometry\VectorT.hh" />
+    <ClInclude Include="Geometry\VectorT_inc.hh" />
+    <ClInclude Include="IO\BinaryHelper.hh" />
+    <ClInclude Include="IO\exporter\BaseExporter.hh" />
+    <ClInclude Include="IO\exporter\ExporterT.hh" />
+    <ClInclude Include="IO\importer\BaseImporter.hh" />
+    <ClInclude Include="IO\importer\ImporterT.hh" />
+    <ClInclude Include="IO\IOInstances.hh" />
+    <ClInclude Include="IO\IOManager.hh" />
+    <ClInclude Include="IO\MeshIO.hh" />
+    <ClInclude Include="IO\OFFFormat.hh" />
+    <ClInclude Include="IO\OMFormat.hh" />
+    <ClInclude Include="IO\Options.hh" />
+    <ClInclude Include="IO\reader\BaseReader.hh" />
+    <ClInclude Include="IO\reader\OBJReader.hh" />
+    <ClInclude Include="IO\reader\OFFReader.hh" />
+    <ClInclude Include="IO\reader\OMReader.hh" />
+    <ClInclude Include="IO\reader\PLYReader.hh" />
+    <ClInclude Include="IO\reader\STLReader.hh" />
+    <ClInclude Include="IO\SR_binary.hh" />
+    <ClInclude Include="IO\SR_binary_spec.hh" />
+    <ClInclude Include="IO\SR_rbo.hh" />
+    <ClInclude Include="IO\SR_store.hh" />
+    <ClInclude Include="IO\SR_types.hh" />
+    <ClInclude Include="IO\StoreRestore.hh" />
+    <ClInclude Include="IO\writer\BaseWriter.hh" />
+    <ClInclude Include="IO\writer\OBJWriter.hh" />
+    <ClInclude Include="IO\writer\OFFWriter.hh" />
+    <ClInclude Include="IO\writer\OMWriter.hh" />
+    <ClInclude Include="IO\writer\PLYWriter.hh" />
+    <ClInclude Include="IO\writer\STLWriter.hh" />
+    <ClInclude Include="Mesh\ArrayItems.hh" />
+    <ClInclude Include="Mesh\ArrayKernel.hh" />
+    <ClInclude Include="Mesh\AttribKernelT.hh" />
+    <ClInclude Include="Mesh\Attributes.hh" />
+    <ClInclude Include="Mesh\BaseKernel.hh" />
+    <ClInclude Include="Mesh\BaseMesh.hh" />
+    <ClInclude Include="Mesh\Casts.hh" />
+    <ClInclude Include="Mesh\CirculatorsT.hh" />
+    <ClInclude Include="Mesh\FinalMeshItemsT.hh" />
+    <ClInclude Include="Mesh\gen\circulators_header.hh" />
+    <ClInclude Include="Mesh\gen\circulators_template.hh" />
+    <ClInclude Include="Mesh\gen\footer.hh" />
+    <ClInclude Include="Mesh\gen\iterators_header.hh" />
+    <ClInclude Include="Mesh\gen\iterators_template.hh" />
+    <ClInclude Include="Mesh\Handles.hh" />
+    <ClInclude Include="Mesh\IteratorsT.hh" />
+    <ClInclude Include="Mesh\PolyConnectivity.hh" />
+    <ClInclude Include="Mesh\PolyMeshT.hh" />
+    <ClInclude Include="Mesh\PolyMesh_ArrayKernelT.hh" />
+    <ClInclude Include="Mesh\Status.hh" />
+    <ClInclude Include="Mesh\Traits.hh" />
+    <ClInclude Include="Mesh\TriConnectivity.hh" />
+    <ClInclude Include="Mesh\TriMeshT.hh" />
+    <ClInclude Include="Mesh\TriMesh_ArrayKernelT.hh" />
+    <ClInclude Include="System\compiler.hh" />
+    <ClInclude Include="System\config.hh" />
+    <ClInclude Include="System\mostream.hh" />
+    <ClInclude Include="System\omstream.hh" />
+    <ClInclude Include="Utils\AutoPropertyHandleT.hh" />
+    <ClInclude Include="Utils\BaseProperty.hh" />
+    <ClInclude Include="Utils\color_cast.hh" />
+    <ClInclude Include="Utils\Endian.hh" />
+    <ClInclude Include="Utils\GenProg.hh" />
+    <ClInclude Include="Utils\Noncopyable.hh" />
+    <ClInclude Include="Utils\Property.hh" />
+    <ClInclude Include="Utils\PropertyContainer.hh" />
+    <ClInclude Include="Utils\SingletonT.hh" />
+    <ClInclude Include="Utils\vector_cast.hh" />
+    <ClInclude Include="Utils\vector_traits.hh" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
