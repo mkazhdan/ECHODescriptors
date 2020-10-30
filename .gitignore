@@ -1,0 +1,6 @@
+.vs/*
+*.zip
+Bin/*
+example/*
+*.filters
+Obj/*
