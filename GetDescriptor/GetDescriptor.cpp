@@ -71,7 +71,7 @@ void ShowUsage( const char* ex )
     printf( "\t --%s <input mesh>\n" , In.name.c_str() );
     printf( "\t --%s <source vertex index>\n" , SourceNode.name.c_str() );
     printf( "\t --%s <source face index>\n" , SourceFace.name.c_str() );
-    printf( "\t --%s <barycentric coordinates 1> <barycentric coordinates 2> <barycentric coordinates 2>\n" , BC.name.c_str() );
+    printf( "\t --%s <barycentric coordinate 1> <barycentric coordinate 2> <barycentric coordinate 3>\n" , BC.name.c_str() );
     printf( "\t[--%s <spectral decomposition>]\n" , Spec.name.c_str() );
     printf( "\t[--%s <output ECHO descriptor>]\n" , Out.name.c_str() );
     printf( "\t[--%s <Mesh area to support radius scale>=%.2f]\n" , threshFactor.name.c_str() , threshFactor.value );
@@ -158,30 +158,30 @@ void run( void )
 
     //=== Load PLY=====
     TriMesh< float > tMesh( vertices , triangles );
-    if( Verbose.set ) std::cout << "Got mesh: " << timer.elapsed() << std::endl;
+    if( Verbose.set ) std::cout << "\tGot mesh: " << timer.elapsed() << std::endl;
 
     //==Load Spectral Decomposition==
     timer.reset();
     if( Spec.set ) tMesh.readSpectralDecomposition( Spec.value );
     else tMesh.setSpectralDecomposition();
-    std::cout << "Got spectrum: " << timer.elapsed() << std::endl;
+    std::cout << "\tGot spectrum: " << timer.elapsed() << std::endl;
 
     // Compute + smooth HKS
     std::vector< double > hks;
 
     timer.reset();
     tMesh.vertexHKS( hks , 0.1 ); // 0.1 
-    if( Verbose.set ) std::cout << "Got HKS: " << timer.elapsed() << std::endl;
+    if( Verbose.set ) std::cout << "\tGot HKS: " << timer.elapsed() << std::endl;
 
     timer.reset();
     tMesh.smoothVertexSignal( hks , 1.0e7 ); 
-    if( Verbose.set ) std::cout << "Smoothed HKS: " << timer.elapsed() << std::endl;
+    if( Verbose.set ) std::cout << "\tSmoothed HKS: " << timer.elapsed() << std::endl;
 
     std::vector< Point2D< double > > triangleGradients;
     timer.reset();
     tMesh.initMetricsBiharmonic();
     tMesh.metricGradient( hks , triangleGradients );
-    if( Verbose.set ) std::cout << "Got HKS gradients: " << timer.elapsed() << std::endl;
+    if( Verbose.set ) std::cout << "\tGot HKS gradients: " << timer.elapsed() << std::endl;
 
     // Compute support radius proportional to surface area
     tMesh.initAreaBiharmonic();
@@ -192,7 +192,7 @@ void run( void )
     {
         timer.reset();
         for( int i=0 ; i<-SourceNode.value ; i++ ) RegularGrid< float , 2 > F = echo< float >( tMesh , triangleGradients, rand() % vertices.size() , rho , nRadialBins , DistanceType.value );
-        if( Verbose.set ) std::cout << "Got " << (-SourceNode.value) << " ECHO descriptors: " << timer.elapsed() << std::endl;
+        if( Verbose.set ) std::cout << "\tGot " << (-SourceNode.value) << " ECHO descriptors: " << timer.elapsed() << std::endl;
     }
     else
     {
@@ -202,7 +202,7 @@ void run( void )
         timer.reset();
         if( SourceNode.set ) F = echo< float >( tMesh , triangleGradients, SourceNode.value , rho , nRadialBins , DistanceType.value );
         else                 F = echo< float >( tMesh , triangleGradients , std::pair< int , Point3D< double > >( SourceFace.value , Point3D< double >( BC.values[0] , BC.values[1] , BC.values[2] ) ) , rho , nRadialBins , DistanceType.value );
-        if( Verbose.set ) std::cout << "Got ECHO descriptor: " << timer.elapsed() << std::endl;
+        if( Verbose.set ) std::cout << "\tGot ECHO descriptor: " << timer.elapsed() << std::endl;
 
         if( DiskSupport.set ) F = ResampleSignalDisk( F , OutResolution.value , OutResolution.value );
         else                  F = ResampleSignal( F , OutResolution.value , OutResolution.value );
