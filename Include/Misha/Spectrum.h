@@ -254,8 +254,8 @@ Real Spectrum< Real >::biharmonicDistance( unsigned int i , unsigned int j ) con
 	for( unsigned int k=1 ; k<_eigenvectors.size() ; k++ )
 	{
 		auto& v = _eigenvectors[k];
-		Real temp = (Real) pow( v[i]-v[j] , 2) / (Real)pow( _eigenvalues[k] , 2 );
-		distance += temp;
+		Real temp = ( v[i]-v[j] ) / _eigenvalues[k];
+		distance += temp*temp;
 	}
 	return (Real)sqrt( distance );
 }
@@ -267,8 +267,8 @@ Real Spectrum< Real >::biharmonicDistance( unsigned int i , TriangleIndex tri , 
 	{
 		auto& v = _eigenvectors[k];
 		Real v1 = v[i] , v2 = v[ tri[0] ] * weights[0] + v[ tri[1] ] * weights[1] + v[ tri[2] ] * weights[2];
-		Real temp = (Real) pow( v1-v2 , 2 ) / (Real)pow( _eigenvalues[k] , 2 );
-		distance += temp;
+		Real temp = ( v1-v2 ) / _eigenvalues[k];
+		distance += temp*temp;
 	}
 	return (Real)sqrt( distance );
 }

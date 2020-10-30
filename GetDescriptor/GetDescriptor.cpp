@@ -164,7 +164,7 @@ void run( void )
     timer.reset();
     if( Spec.set ) tMesh.readSpectralDecomposition( Spec.value );
     else tMesh.setSpectralDecomposition();
-    std::cout << "\tGot spectrum: " << timer.elapsed() << std::endl;
+    if( Verbose.set ) std::cout << "\tGot spectrum: " << timer.elapsed() << std::endl;
 
     // Compute + smooth HKS
     std::vector< double > hks;

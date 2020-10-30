@@ -258,22 +258,16 @@ RegularGrid< Real , 2 > echo( const TriMesh< Real > &tMesh , const std::vector< 
 template< class Real , unsigned int nSamples = 7>
 RegularGrid< Real , 2 > echo( const TriMesh< Real > &tMesh , const std::vector< Point2D< double > > &triangleGradients , int nodeIndex , double supportRadius, unsigned int descriptorRadius, int distFlag = DISTANCE_BIHARMONIC)
 {
+    // Compute surface distances
+    std::vector< double > sDistances;
 
-   // Compute surface distances
-	std::vector<double> sDistances;
-
-   if (distFlag == DISTANCE_GEODESIC)
-   {
-      sDistances = tMesh.computeGeodesicsAbout( nodeIndex , (float)supportRadius);
-   }
-   else if ( distFlag == DISTANCE_DIFFUSION)
-   {
-      sDistances = tMesh.computeDiffusionsAbout( nodeIndex , T_DIFF , supportRadius );
-   }
-   else
-   {
-      sDistances = tMesh.computeBiharmonicsAbout (nodeIndex, supportRadius  );
-   }
+    switch( distFlag )
+    {
+        case DISTANCE_GEODESIC:   sDistances = tMesh.computeGeodesicsAbout  ( nodeIndex , (float)supportRadius) ; break;
+        case DISTANCE_DIFFUSION:  sDistances = tMesh.computeDiffusionsAbout ( nodeIndex , T_DIFF , supportRadius ) ; break;
+        case DISTANCE_BIHARMONIC: sDistances = tMesh.computeBiharmonicsAbout( nodeIndex , supportRadius ) ; break;
+        default: ERROR_OUT( "Unrecognized distance flag: " , distFlag );
+    }
 
    // Pre-compute tangent space coordinates + signal
    std::vector< Point2D< double > > logTan;

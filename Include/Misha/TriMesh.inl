@@ -912,45 +912,41 @@ double TriMesh< Real >::biharmonicDist (std::pair<int, Point3D< double >> P, int
 
 
 template< class Real >
-std::vector< double > TriMesh< Real >::computeBiharmonicsAbout ( int nodeIndex, double rho) const
+std::vector< double > TriMesh< Real >::computeBiharmonicsAbout( int nodeIndex , double rho ) const
 {
-
     std::vector< double > bDistances; 
     bDistances.resize( _vertices.size () , std::numeric_limits< double >::max() );
 
-    std::vector<bool> processed;
+    std::vector< bool > processed;
     processed.resize( _vertices.size() , false );
 
-    std::vector<int> Q { nodeIndex };
-    processed[nodeIndex] = true;
+    std::vector< int > Q { nodeIndex };
 
-    bDistances[nodeIndex] = 0.0;
+    processed[ nodeIndex ] = true;
 
-    while ( Q.size () > 0 )
+    bDistances[ nodeIndex ] = 0.0;
+
+    while( Q.size() )
     {
-        int q = Q.back ();
-        Q.pop_back ();
+        int q = Q.back();
+        Q.pop_back();
 
-        for (int l = 0; l < _starVertices[q].size (); l++)
+        for( int l=0 ; l<_starVertices[q].size() ; l++ )
         {
             int r = _starVertices[q][l];
 
-            if ( !processed[r] )
+            if( !processed[r] )
             {
-                bDistances[r] = biharmonicDist (nodeIndex, r);
+                bDistances[r] = biharmonicDist( nodeIndex , r );
 
                 processed[r] = true;
 
-                if ( bDistances[r] <= rho )
-                {
-                    Q.push_back ( r );
-                }
+                if( bDistances[r]<=rho ) Q.push_back ( r );
             }
         }
     }
 
     return bDistances;
-
 }
 
 
