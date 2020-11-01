@@ -26,9 +26,6 @@ ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF S
 DAMAGE.
 */
 
-#ifndef TRIMESH_OBJECT
-#define TRIMESH_OBJECT
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -37,13 +34,13 @@ DAMAGE.
 
 
 template< class Real >
-TriMesh< Real >::TriMesh( const std::vector< Point3D< Real > > &vertices , const std::vector< TriangleIndex > &triangles , int threads ) : _minEL(0) , _maxEL(0) , _meanEL(0) , _vertices(vertices) , _triangles(triangles)
+TriMesh< Real >::TriMesh( const std::vector< Point3D< Real > > &vertices , const std::vector< TriangleIndex > &triangles ) : _minEL(0) , _maxEL(0) , _meanEL(0) , _vertices(vertices) , _triangles(triangles)
 {  
-    _init( threads );
+    _init();
 }
 
 template< class Real >
-void TriMesh< Real >::_init( int threads )
+void TriMesh< Real >::_init( void )
 {
     // Clear all
     _vertexNormals.resize (0); _triangleNormals.resize (0);
@@ -57,7 +54,7 @@ void TriMesh< Real >::_init( int threads )
     _vertexNormals.resize( _vertices.size() , Point3D< Real >() );
     _triangleNormals.resize( _triangles.size() );
 
-#pragma omp parallel for num_threads(threads)
+#pragma omp parallel for
     for( int l=0 ; l<_triangles.size() ; l++ )
     {
         Point3D< Real > v1 = _vertices[ _triangles[l][1] ] - _vertices[ _triangles[l][0] ];
@@ -92,7 +89,7 @@ void TriMesh< Real >::_init( int threads )
 
     _meanEL /= eC;
 
-#pragma omp parallel for num_threads(threads)
+#pragma omp parallel for
     for( int l=0 ; l<_vertices.size() ; l++ )
     {
         if( std::sqrt( _vertexNormals[l].squareNorm () )< ( 16.0 * FLT_EPSILON ) ) _vertexNormals[l] = Point3D< Real >();
@@ -547,11 +544,11 @@ Point2D< double > TriMesh< Real >::getMetricGradient( int l , const std::vector<
 }
 
 template< class Real >
-void TriMesh< Real >::metricGradient ( const std::vector< double >& Implicit , std::vector< Point2D< double > > & triGrads , int threads ) const
+void TriMesh< Real >::metricGradient ( const std::vector< double >& Implicit , std::vector< Point2D< double > > & triGrads ) const
 {
     triGrads.resize( _triangles.size() );
 
-#pragma omp parallel for num_threads(threads)
+#pragma omp parallel for
     for( int l=0 ; l<_triangles.size() ; l++ ) triGrads[l] = getMetricGradient( l , Implicit );
 }
 
@@ -626,11 +623,11 @@ void TriMesh< Real >::computeFundamentalMatricesAndShapeOperator( int l , Square
 
 // Gaussian curvature
 template< class Real >
-void TriMesh< Real >::triangleGaussCurvature (std::vector< double >& triGauss , int threads ) const
+void TriMesh< Real >::triangleGaussCurvature (std::vector< double >& triGauss ) const
 {
     triGauss.resize( _triangles.size() , 0.0);
 
-#pragma omp parallel for num_threads(threads)
+#pragma omp parallel for
     for( int l=0 ; l<_triangles.size() ; l++ )
     {
         SquareMatrix<Real, 2> firstForm , secondForm , shapeOperator;
@@ -642,28 +639,28 @@ void TriMesh< Real >::triangleGaussCurvature (std::vector< double >& triGauss , 
 }
 
 template< class Real >
-void TriMesh< Real >::vertexGaussCurvature( std::vector< double > &vertGauss , int threads ) const
+void TriMesh< Real >::vertexGaussCurvature( std::vector< double > &vertGauss ) const
 {
     vertGauss.resize( _vertices.size(), 0.0);
 
     std::vector< double > triGauss;
-    triangleGaussCurvature( triGauss , threads );
+    triangleGaussCurvature( triGauss );
 
     for( int l=0 ; l<_triangles.size() ; l++ ) for( int i=0 ; i<3 ; i++ ) vertGauss[ _triangles[l][i] ] += triGauss[l] * _triangleAreas[l] / 3.0;
 
-#pragma omp parallel for num_threads(threads)
+#pragma omp parallel for
     for( int l=0 ; l<_vertices.size () ; l++ ) if( _vertexAreas[l]>16.0 * FLT_EPSILON ) vertGauss[l] /= _vertexAreas[l];
 }
 
 
 // Mean curvature
 template< class Real >
-void TriMesh< Real >::triangleMeanCurvature( std::vector< double > &triMean , int threads ) const
+void TriMesh< Real >::triangleMeanCurvature( std::vector< double > &triMean ) const
 {
     triMean.resize(0);
     triMean.resize( _triangles.size() , 0.0 );
 
-#pragma omp parallel for num_threads(threads)
+#pragma omp parallel for
     for( int l=0 ; l<_triangles.size () ; l++ )
     {
         SquareMatrix<Real, 2> firstForm, secondForm, shapeOperator;
@@ -675,18 +672,18 @@ void TriMesh< Real >::triangleMeanCurvature( std::vector< double > &triMean , in
 }
 
 template< class Real >
-void TriMesh< Real >::vertexMeanCurvature( std::vector< double > &vertMean , int threads ) const
+void TriMesh< Real >::vertexMeanCurvature( std::vector< double > &vertMean ) const
 {
     vertMean.resize(0);
     vertMean.resize( _vertices.size() , 0.0 );
 
     std::vector< double > triMean;
-    triangleMeanCurvature( triMean , threads );
+    triangleMeanCurvature( triMean );
 
     for( int l=0 ; l<_triangles.size() ; l++ ) for( int i=0 ; i<3 ; i++ )
         vertMean[ _triangles[l][i] ] += triMean[l] * _triangleAreas[l] / 3.0;
  
-#pragma omp parallel for num_threads(threads)
+#pragma omp parallel for
     for( int l=0 ; l<_vertices.size() ; l++) if( _vertexAreas[l]>16.0*FLT_EPSILON ) vertMean[l] /= _vertexAreas[l];
 }
 
@@ -829,102 +826,48 @@ std::pair<std::vector< double >, std::vector< double >> TriMesh< Real >::compute
     return std::pair< std::vector< double >, std::vector< double > > ( dgpc.getDistances (), dgpc.getAngles () );
 }
 
-// =============================================
-// == Laplace-Beltrami Spectral Decompositon ===
-// =============================================
-
-template< typename Real >
-void TriMesh< Real >::setSpectralDecomposition( int specDimension , Real specOffset , bool specLump )
-{
-    _spectrum.set( _vertices , _triangles , specDimension , specOffset , specLump );
-}
-
-template< typename Real >
-void TriMesh< Real >::readSpectralDecomposition( std::string fileName )
-{
-    _spectrum.read( fileName );
-    for( int i=0 ; i<_spectrum.size() ; i++ ) if( _spectrum.eVector( i ).size()!=_vertices.size() )
-        ERROR_OUT( "Eigenvector dimension and vertex num don't match: " , _spectrum.eVector(i).size() , " != " , _vertices.size() );
-}
-
 // =============================
 // === Heat Kernel Signature ===
 // =============================
 
 template< class Real >
-void TriMesh< Real >::vertexHKS( std::vector< double > &vertHKS , double diffTime , int threads ) const
+void TriMesh< Real >::vertexHKS( const Spectrum< double > &spectrum , std::vector< double > &vertHKS , double diffTime ) const
 {
     // Compute HKS
     vertHKS.resize( _vertices.size() , 0.0 );
 
-#pragma omp parallel for num_threads (threads)
-    for( int i=0 ; i<_vertices.size() ; i++ ) for( int j=0 ; j<_spectrum.size() ; j++ )
-        vertHKS[i] += (double) exp( - _spectrum.eValue(j) * diffTime ) * _spectrum.eVector(j)[i] * _spectrum.eVector(j)[i];
+#pragma omp parallel for
+    for( int i=0 ; i<_vertices.size() ; i++ ) for( int j=0 ; j<spectrum.size() ; j++ )
+        vertHKS[i] += (double) exp( - spectrum.eValue(j) * diffTime ) * spectrum.eVector(j)[i] * spectrum.eVector(j)[i];
 }
 
-// ============================
-// === Biharmonic Distances ===
-// ============================
-
+// ==========================
+// === Spectral Distances ===
+// ==========================
 template< class Real >
-double TriMesh< Real >::biharmonicDist (int nodeX, int nodeY) const
+double TriMesh< Real >::spectralDist( const Spectrum< double > &spectrum , int nodeX , int nodeY ) const
 {
-    return _spectrum.biharmonicDistance( nodeX , nodeY );
+    return spectrum.spectralDistance( nodeX , nodeY , 1 , std::numeric_limits< int >::max() );
 }
 
-
 template< class Real >
-void TriMesh< Real >::initMetricsBiharmonic( int threads )
+double TriMesh< Real >::spectralDist( const Spectrum< double > &spectrum , std::pair< int , Point3D< double > > P , int node ) const
 {
-    _triangleMetrics.resize( _triangles.size() );
-
-#pragma omp parallel for num_threads (threads)
-    for( int i=0 ; i<_triangles.size() ; i++ )
-    {
-        double l12 = biharmonicDist( _triangles[i][0] , _triangles[i][1] );
-        double l13 = biharmonicDist( _triangles[i][0] , _triangles[i][2] );
-        double l23 = biharmonicDist( _triangles[i][1] , _triangles[i][2] );
-
-        _triangleMetrics[i][0] = l12 * l12;
-        _triangleMetrics[i][1] = (l12 * l12 + l13 * l13 - l23 * l23) / 2;
-        _triangleMetrics[i][2] = l13 * l13;
-    }
+    return spectrum.spectralDistance( node , _triangles[ P.first ] , P.second , 1 , std::numeric_limits< int >::max() );
 }
 
-
-
-
 template< class Real >
-double TriMesh< Real >::biharmonicDist (std::pair<int, Point3D< double >> P, int node) const
+std::vector< double > TriMesh< Real >::computeSpectralDistancesAbout( const Spectrum< double > &spectrum , int nodeIndex, double rho ) const
 {
-    Point3D< double > d (0.0, 0.0, 0.0);
-
-    for( int k=1 ; k<_spectrum.size() ; k++ )
-    {
-        double lambda2 = _spectrum.eValue(k) * _spectrum.eValue(k);
-
-        for( int i=0 ; i<3 ; i++ )
-            d[i] += ( _spectrum.eVector(k)[ _triangles[P.first][i] ] - _spectrum.eVector(k)[node] ) * ( _spectrum.eVector(k)[ _triangles[P.first][i] ] - _spectrum.eVector(k)[node] ) / lambda2;
-    }
-
-    return std::sqrt(d[0]) * P.second[0] + std::sqrt(d[1]) * P.second[1] + std::sqrt(d[2]) * P.second[2];
-}
-
-
-template< class Real >
-std::vector< double > TriMesh< Real >::computeBiharmonicsAbout( int nodeIndex , double rho ) const
-{
-    std::vector< double > bDistances; 
-    bDistances.resize( _vertices.size () , std::numeric_limits< double >::max() );
+    std::vector< double > sDistances; 
+    sDistances.resize( _vertices.size () , std::numeric_limits< double >::max() );
 
     std::vector< bool > processed;
     processed.resize( _vertices.size() , false );
 
     std::vector< int > Q { nodeIndex };
-
     processed[ nodeIndex ] = true;
-
-    bDistances[ nodeIndex ] = 0.0;
+    sDistances[ nodeIndex ] = 0.0;
 
     while( Q.size() )
     {
@@ -934,37 +877,35 @@ std::vector< double > TriMesh< Real >::computeBiharmonicsAbout( int nodeIndex , 
         for( int l=0 ; l<_starVertices[q].size() ; l++ )
         {
             int r = _starVertices[q][l];
-
             if( !processed[r] )
             {
-                bDistances[r] = biharmonicDist( nodeIndex , r );
-
+                sDistances[r] = spectralDist( spectrum , nodeIndex , r );
                 processed[r] = true;
-
-                if( bDistances[r]<=rho ) Q.push_back ( r );
+                if( sDistances[r]<=rho ) Q.push_back ( r );
             }
         }
     }
 
-    return bDistances;
+    return sDistances;
 }
 
-
 template< class Real >
-std::vector< double > TriMesh< Real >::computeBiharmonicsAbout ( std::pair<int, Point3D< double >> & P, double rho) const
+std::vector< double > TriMesh< Real >::computeSpectralDistancesAbout( const Spectrum< double > &spectrum , std::pair<int, Point3D< double >> & P, double rho ) const
 {
-    std::vector< double > bDistances; 
-    bDistances.resize( _vertices.size() , std::numeric_limits< double >::max() );
+    std::vector< double > sDistances; 
+    sDistances.resize( _vertices.size() , std::numeric_limits< double >::max() );
 
     std::vector<bool> processed;
     processed.resize( _vertices.size () , false );
 
-    std::vector< int > Q { (int)_triangles[P.first][0] };
-    processed[ _triangles[P.first][0] ] = true;
+    std::vector< int > Q { (int)_triangles[P.first][0] , (int)_triangles[P.first][1] , (int)_triangles[P.first][2] };
+    processed[ _triangles[P.first][0] ] = processed[ _triangles[P.first][1] ] = processed[ _triangles[P.first][2] ] = true;
 
-    bDistances[ _triangles[P.first][0] ] = biharmonicDist( P , _triangles[P.first][0] );
+    sDistances[ _triangles[P.first][0] ] = spectralDist( spectrum , P , _triangles[P.first][0] );
+    sDistances[ _triangles[P.first][1] ] = spectralDist( spectrum , P , _triangles[P.first][1] );
+    sDistances[ _triangles[P.first][2] ] = spectralDist( spectrum , P , _triangles[P.first][2] );
 
-    while ( Q.size () > 0 )
+    while( Q.size () > 0 )
     {
         int q = Q.back ();
         Q.pop_back ();
@@ -972,194 +913,24 @@ std::vector< double > TriMesh< Real >::computeBiharmonicsAbout ( std::pair<int, 
         for (int l = 0; l < _starVertices[q].size (); l++)
         {
             int r = _starVertices[q][l];
-
-            //printf("sV = %d / %d\n", r, (int) vertices.size () );
             if ( !processed[r] )
             {
-                bDistances[r] = biharmonicDist (P, r);
-
+                sDistances[r] = spectralDist( spectrum , P , r );
                 processed[r] = true;
-
-                if ( bDistances[r] <= rho )
-                {
-                    Q.push_back ( r );
-                }
+                if( sDistances[r]<=rho ) Q.push_back ( r );
             }
         }
     }
 
-    return bDistances;
-}
-
-
-template< class Real >
-double TriMesh< Real >::getAreaBiharmonic ( int l) const
-{
-
-    double d1 = biharmonicDist( _triangles[l][0] , _triangles[l][1] );
-    double d2 = biharmonicDist( _triangles[l][0] , _triangles[l][2] );
-    double d3 = biharmonicDist( _triangles[l][1] , _triangles[l][2] );
-
-    double s = (d1 + d2 + d3) / 2;
-
-   return std::sqrt ( s * (s - d1) * (s - d2) * (s - d3) );
+    return sDistances;
 }
 
 template< class Real >
-void TriMesh< Real >::initAreaBiharmonic( int threads )
+double TriMesh< Real >::getSpectralArea( const Spectrum< double > &spectrum , int l ) const
 {
-#pragma omp parallel for num_threads(threads)
-    for( int l=0 ; l<_triangles.size() ; l++ ) _triangleAreas[l] = (Real)getAreaBiharmonic(l);
-}
-
-
-// ===========================
-// === Diffusion distances ===
-// ===========================
-
-template< class Real >
-double TriMesh< Real >::diffusionDist (int nodeX, int nodeY, double t0) const
-{
-
-    double t = t0;
-
-    double d = 0.0;
-
-    for( int k=1 ; k<_spectrum.size() ; k++ )
-        d += ( _spectrum.eVector(k)[nodeX] - _spectrum.eVector(k)[nodeY] ) * ( _spectrum.eVector(k)[nodeX] - _spectrum.eVector(k)[nodeY] ) / ( std::exp ( 2.0 * t * _spectrum.eValue(k) ) );
-
-    return std::sqrt(d);
-}
-
-template< class Real >
-void TriMesh< Real >::initMetricsDiffusion (double t, int threads)
-{
-    _triangleMetrics.resize( _triangles.size() );
-
-#pragma omp parallel for num_threads (threads)
-    for( int i=0 ; i<_triangles.size() ; i++ )
-    {
-        double l12 = diffusionDist( _triangles[i][0] , _triangles[i][1] );
-        double l13 = diffusionDist( _triangles[i][0] , _triangles[i][2] );
-        double l23 = diffusionDist( _triangles[i][1] , _triangles[i][2] );
-
-        _triangleMetrics[i][0] = l12 * l12;
-        _triangleMetrics[i][1] = (l12 * l12 + l13 * l13 - l23 * l23) / 2;
-        _triangleMetrics[i][2] = l13 * l13;
-    }
-}
-
-
-template< class Real >
-double TriMesh< Real >::diffusionDist (std::pair<int, Point3D< double >> P, int node, double t0) const
-{
-
-    double t = t0;
-
-    Point3D< double > d (0.0, 0.0, 0.0);
-
-    for( int k=1 ; k<_spectrum.size() ; k++ )
-    {
-        double exp2 = std::exp( 2.0 * t * _spectrum.eValue(k) );
-
-        for( int i=0 ; i<3 ; i++ )
-            d[i] += ( _spectrum.eVector(k)[ _triangles[P.first][i] ] - _spectrum.eVector(k)[node] ) * ( _spectrum.eVector(k)[ _triangles[P.first][i] ] - _spectrum.eVector(k)[node] ) / exp2;
-    }
-
-    return std::sqrt(d[0]) * P.second[0] + std::sqrt(d[1]) * P.second[1] + std::sqrt(d[2]) * P.second[2];
-}
-
-
-template< class Real >
-std::vector< double > TriMesh< Real >::computeDiffusionsAbout ( int nodeIndex, double t0, double rho) const
-{
-
-    std::vector< double > dDistances; 
-    dDistances.resize( _vertices.size() , std::numeric_limits< double >::max() );
-
-    std::vector<bool> processed;
-    processed.resize( _vertices.size () , false );
-
-    std::vector<int> Q { nodeIndex };
-    processed[nodeIndex] = true;
-
-    dDistances[nodeIndex] = 0.0;
-
-    while ( Q.size () > 0 )
-    {
-        int q = Q.back ();
-        Q.pop_back ();
-
-        for (int l = 0; l < _starVertices[q].size (); l++)
-        {
-            int r = _starVertices[q][l];
-
-            if ( !processed[r] )
-            {
-                dDistances[r] = diffusionDist (nodeIndex, r, t0);
-
-                processed[r] = true;
-
-                if ( dDistances[r] <= rho )
-                {
-                    Q.push_back ( r );
-                }
-            }
-        }
-    }
-
-    return dDistances;
-
-}
-
-template< class Real >
-std::vector< double > TriMesh< Real >::computeDiffusionsAbout ( std::pair<int, Point3D< double >> & P, double t0, double rho) const
-{
-    std::vector< double > dDistances; 
-    dDistances.resize( _vertices.size() , std::numeric_limits< double >::max() );
-
-    std::vector<bool> processed;
-    processed.resize( _vertices.size() , false );
-
-    std::vector< int > Q { (int)_triangles[P.first][0] };
-    processed[ _triangles[P.first][0] ] = true;
-
-    dDistances[ _triangles[P.first][0] ] = diffusionDist( P , _triangles[P.first][0] , t0 );
-
-    while ( Q.size () > 0 )
-    {
-        int q = Q.back ();
-        Q.pop_back ();
-
-        for (int l = 0; l < _starVertices[q].size (); l++)
-        {
-            int r = _starVertices[q][l];
-
-            //printf("sV = %d / %d\n", r, (int) vertices.size () );
-            if ( !processed[r] )
-            {
-                dDistances[r] = diffusionDist (P, r, t0);
-
-                processed[r] = true;
-
-                if ( dDistances[r] <= rho )
-                {
-                    Q.push_back ( r );
-                }
-            }
-        }
-    }
-
-    return dDistances;
-}
-
-template< class Real >
-double TriMesh< Real >::getAreaDiffusion( int l, double t) const
-{
-
-    double d1 = diffusionDist ( triangles[l][0], triangles[l][1], t);
-    double d2 = diffusionDist ( triangles[l][0], triangles[l][2], t );
-    double d3 = diffusionDist ( triangles[l][1], triangles[l][2], t );
+    double d1 = spectralDist( spectrum , _triangles[l][0] , _triangles[l][1] );
+    double d2 = spectralDist( spectrum , _triangles[l][0] , _triangles[l][2] );
+    double d3 = spectralDist( spectrum , _triangles[l][1] , _triangles[l][2] );
 
     double s = (d1 + d2 + d3) / 2;
 
@@ -1167,10 +938,26 @@ double TriMesh< Real >::getAreaDiffusion( int l, double t) const
 }
 
 template< class Real >
-void TriMesh< Real >::initAreaDiffusion (double t, int threads)
+void TriMesh< Real >::initSpectralArea( const Spectrum< double > &spectrum )
 {
-#pragma omp parallel for num_threads(threads)
-    for( int l=0 ; l<_triangles.size() ; l++ ) _triangleAreas[l] = getAreaDiffusion (l, t);
+#pragma omp parallel for
+    for( int l=0 ; l<_triangles.size() ; l++ ) _triangleAreas[l] = (Real)getSpectralArea( spectrum , l );
 }
 
-#endif
+template< class Real >
+void TriMesh< Real >::initSpectralMetrics( const Spectrum< double > &spectrum )
+{
+    _triangleMetrics.resize( _triangles.size() );
+
+#pragma omp parallel for
+    for( int i=0 ; i<_triangles.size() ; i++ )
+    {
+        double l12 = spectralDist( spectrum , _triangles[i][0] , _triangles[i][1] );
+        double l13 = spectralDist( spectrum , _triangles[i][0] , _triangles[i][2] );
+        double l23 = spectralDist( spectrum , _triangles[i][1] , _triangles[i][2] );
+
+        _triangleMetrics[i][0] = l12 * l12;
+        _triangleMetrics[i][1] = (l12 * l12 + l13 * l13 - l23 * l23) / 2;
+        _triangleMetrics[i][2] = l13 * l13;
+    }
+}

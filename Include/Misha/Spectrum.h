@@ -29,10 +29,10 @@ DAMAGE.
 #ifndef SPECTRUM_INCLUDED
 #define SPECTRUM_INCLUDED
 
+#include <functional>
 #include <Spectra/SymGEigsSolver.h>
 #include "Misha/FEM.h"
 #include "Misha/Solver.h"
-
 
 template< typename Real >
 struct Spectrum
@@ -41,16 +41,23 @@ struct Spectrum
 	void set( const std::vector< Point3D< GReal > > &vertices , const std::vector< TriangleIndex > &triangles , unsigned int dimension , Real offset , bool lump );
 	void read( const std::string &fileName );
 	void write( const std::string &fileName ) const;
+	template< typename SpectralFunctor > Real spectralDistance( const SpectralFunctor &F , unsigned int i , unsigned int j , int beginE , int endE ) const;
+	template< typename SpectralFunctor > Real spectralDistance( const SpectralFunctor &F , unsigned int i , TriangleIndex tri , Point3D< Real > weights , int beginE , int endE ) const;
+	Real spectralDistance( unsigned int i , unsigned int j , int beginE , int endE ) const;
+	Real spectralDistance( unsigned int i , TriangleIndex tri , Point3D< Real > weights , int beginE , int endE ) const;
 	Real biharmonicDistance( unsigned int i , unsigned int j ) const;
 	Real biharmonicDistance( unsigned int i , TriangleIndex tri , Point3D< Real > weights ) const;
 	size_t size( void ) const { return _eigenvalues.size(); }
+	Real &eValue( unsigned int idx ){ return _eigenvalues[idx]; }
 	const Real &eValue( unsigned int idx ) const { return _eigenvalues[idx]; }
+	std::vector< Real > &eVector( unsigned int idx ){ return _eigenvectors[idx]; }
 	const std::vector< Real > &eVector( unsigned int idx ) const { return _eigenvectors[idx]; }
 protected:
 	static const unsigned long long _MAGIC_NUMBER;
 	std::vector< Real > _eigenvalues;
 	std::vector< std::vector< Real > > _eigenvectors;
 };
+
 
 //////////////
 // Spectrum //
@@ -104,11 +111,7 @@ void Spectrum< Real >::set( const std::vector< Point3D< GReal > > &vertices , co
 
 	std::vector< TriangleIndex > _triangles = triangles;
 	FEM::RiemannianMesh< Real > mesh( GetPointer( _triangles ) , _triangles.size() );
-#if 1
 	mesh.template setMetricFromEmbedding< 3 >( [&]( unsigned int idx ){ return Point3D< Real >( vertices[idx] ); } );
-#else
-	mesh.setMetricFromEmbedding( GetPointer( vertices ) );
-#endif
 	mesh.makeUnitArea();
 	SparseMatrix< Real , int > M = mesh.template massMatrix< FEM::BASIS_0_WHITNEY >( lump ) , S = mesh.template stiffnessMatrix< FEM::BASIS_0_WHITNEY >();
 
@@ -248,29 +251,77 @@ void Spectrum< Real >::write( const std::string &fileName ) const
 }
 
 template< typename Real >
-Real Spectrum< Real >::biharmonicDistance( unsigned int i , unsigned int j ) const
+template< typename SpectralFunctor >
+Real Spectrum< Real >::spectralDistance( const SpectralFunctor &F , unsigned int i , unsigned int j , int beginE , int endE ) const
 {
 	Real distance = (Real)0;
-	for( unsigned int k=1 ; k<_eigenvectors.size() ; k++ )
+	beginE = std::max< int >( beginE , 0 );
+	endE = std::min< int >( endE , _eigenvectors.size() );
+	for( unsigned int k=beginE ; k<endE ; k++ )
 	{
 		auto& v = _eigenvectors[k];
-		Real temp = ( v[i]-v[j] ) / _eigenvalues[k];
-		distance += temp*temp;
+		Real temp = ( v[i]-v[j] ) * F( _eigenvalues[k] );
+		distance += temp * temp;
 	}
 	return (Real)sqrt( distance );
 }
 template< typename Real >
-Real Spectrum< Real >::biharmonicDistance( unsigned int i , TriangleIndex tri , Point3D< Real> weights ) const
+template< typename SpectralFunctor >
+Real Spectrum< Real >::spectralDistance( const SpectralFunctor &F , unsigned int i , TriangleIndex tri , Point3D< Real> weights , int beginE , int endE ) const
 {
 	Real distance = (Real)0;
-	for( unsigned int k=1 ; k<_eigenvectors.size() ; k++ )
+	beginE = std::max< int >( beginE , 0 );
+	endE = std::min< int >( endE , _eigenvectors.size() );
+	for( unsigned int k=beginE ; k<endE ; k++ )
 	{
 		auto& v = _eigenvectors[k];
 		Real v1 = v[i] , v2 = v[ tri[0] ] * weights[0] + v[ tri[1] ] * weights[1] + v[ tri[2] ] * weights[2];
-		Real temp = ( v1-v2 ) / _eigenvalues[k];
+		Real temp = ( v1-v2 ) * F( _eigenvalues[k] );
 		distance += temp*temp;
 	}
 	return (Real)sqrt( distance );
+}
+
+template< typename Real >
+Real Spectrum< Real >::spectralDistance( unsigned int i , unsigned int j , int beginE , int endE ) const
+{
+	Real distance = (Real)0;
+	beginE = std::max< int >( beginE , 0 );
+	endE = std::min< int >( endE , _eigenvectors.size() );
+	for( unsigned int k=beginE ; k<endE ; k++ )
+	{
+		auto& v = _eigenvectors[k];
+		Real temp = ( v[i]-v[j] );
+		distance += temp * temp;
+	}
+	return (Real)sqrt( distance );
+}
+template< typename Real >
+Real Spectrum< Real >::spectralDistance( unsigned int i , TriangleIndex tri , Point3D< Real> weights , int beginE , int endE ) const
+{
+	Real distance = (Real)0;
+	beginE = std::max< int >( beginE , 0 );
+	endE = std::min< int >( endE , _eigenvectors.size() );
+	for( unsigned int k=beginE ; k<endE ; k++ )
+	{
+		auto& v = _eigenvectors[k];
+		Real v1 = v[i] , v2 = v[ tri[0] ] * weights[0] + v[ tri[1] ] * weights[1] + v[ tri[2] ] * weights[2];
+		Real temp = ( v1-v2 );
+		distance += temp*temp;
+	}
+	return (Real)sqrt( distance );
+}
+
+
+template< typename Real >
+Real Spectrum< Real >::biharmonicDistance( unsigned int i , unsigned int j ) const
+{
+	return spectralDistance( []( double ev ){ return 1./ev; } , i , j , 1 , _eigenvectors.size() );
+}
+template< typename Real >
+Real Spectrum< Real >::biharmonicDistance( unsigned int i , TriangleIndex tri , Point3D< Real> weights ) const
+{
+	return spectralDistance( []( double ev ){ return 1./ev; } , i , tri , weights , 1 , _eigenvectors.size() );
 }
 
 #endif // SPECTRUM_INCLUDED

@@ -75,14 +75,12 @@ protected:
 	repOM _surfaceMesh;
 	double _logEpsilon = 1.0e-12;
 
-	Spectrum< double > _spectrum;
-
 	// Initalizes class from triangle mesh
-	void _init( int threads=1 );
+	void _init( void );
 
 public:
 
-	TriMesh( const std::vector< Point3D< Real > > &vertices , const std::vector< TriangleIndex > &triangles , int threads=1 );
+	TriMesh( const std::vector< Point3D< Real > > &vertices , const std::vector< TriangleIndex > &triangles );
 
 	//  Utility clamp function
 	Real clamp( Real v , Real lo , Real hi );
@@ -95,11 +93,9 @@ public:
 	Point3D< double > getBarycentric( Point3D< Real > P , Point3D< Real > v1 , Point3D< Real > v2 , Point3D< Real > v3 ) const; 
 	Point3D< double > getBarycentric( Point2D< double > P, Point2D< double > v1 , Point2D< double > v2 , Point2D< double > v3 ) const ;
 
-   
 	static Point3D< double > ComposeCoordinates( Point3D< double > P , Point3D< double > v1 , Point3D< double > v2 , Point3D< double > v3 ); // P - barycoords for triangle with verts v1, v2, v3, vi - vertices passed in terms of barycentric coords
 
 	Point3D<Real> asPoint ( std::pair<int, Point3D< double >> baryC ) const;
-
 
 	// Project point onto triangle plane
 	Point3D< float > projectToTri ( Point3D<Real> P , int triIndex) const;
@@ -140,7 +136,7 @@ public:
 	Point2D< double > getMetricGradient( int l, const std::vector< double >& Implicit) const;
 
 	// Computes gradient of implicit function at all triangles
-   void metricGradient( const std::vector< double >& Implciit , std::vector<Point2D< double > > &triGrads , int threads=1) const;
+   void metricGradient( const std::vector< double >& Implciit , std::vector<Point2D< double > > &triGrads ) const;
 
    // Metric dot
    double metricDot( int l, const Point2D< double >& w1, const Point2D< double >& w2 ) const;
@@ -154,12 +150,12 @@ public:
 	void computeFundamentalMatricesAndShapeOperator( int l, SquareMatrix<Real, 2>& firstForm, SquareMatrix<Real, 2>& secondForm, SquareMatrix<Real, 2>& shapeOperator) const;
 
 	// Computes Gaussian Curvature at vertices or triangles
-	void vertexGaussCurvature ( std::vector< double >& vertGauss, int threads = 1) const;
-	void triangleGaussCurvature ( std::vector< double >& triGauss, int threads = 1) const;
+	void vertexGaussCurvature ( std::vector< double >& vertGauss ) const;
+	void triangleGaussCurvature ( std::vector< double >& triGauss ) const;
 
 	// Computes mean curvature at vertices or triangles
-	void vertexMeanCurvature (std::vector< double >& vertMean, int threads = 1) const;
-	void triangleMeanCurvature (std::vector< double >& triMean, int threads = 1) const;
+	void vertexMeanCurvature (std::vector< double >& vertMean ) const;
+	void triangleMeanCurvature (std::vector< double >& triMean ) const;
 
 	// Smooth vertex signal
 	void returnMassStiffness( Real diffTime , SparseMatrix< double , int > &mass , SparseMatrix< double , int >& stiffness );
@@ -185,40 +181,20 @@ public:
 	// ===============================================
 	// === Laplace-Beltrami spectral decomposition ===
 	// ===============================================
-
-	// Compute spectral decomposition of mesh
-	void setSpectralDecomposition( int specDimension=200 , Real specOffset=(Real)100. , bool specLump=false );
-	void readSpectralDecomposition( std::string fileName );
-	const Spectrum< double > &spectrum( void ) const { return _spectrum; }
-
 	// Heat Kernel Signature
-	void vertexHKS( std::vector< double > &vertHKS , double diffTime=0.1 , int threads=1 ) const;
+	void vertexHKS( const Spectrum< double > &spectrum , std::vector< double > &vertHKS , double diffTime=0.1 ) const;
 
-	// Biharmonic distance
-	double biharmonicDist( int nodeX , int nodeY ) const;
-	double biharmonicDist( std::pair< int , Point3D< double > > P , int node ) const;
+	// Spectral distance
+	double spectralDist( const Spectrum< double > &spectrum , int nodeX , int nodeY ) const;
+	double spectralDist( const Spectrum< double > &spectrum , std::pair< int , Point3D< double > > P , int node ) const;
 
-	std::vector< double > computeBiharmonicsAbout( int nodeIndex, double rho = std::numeric_limits< double >::max () ) const;
+	std::vector< double > computeSpectralDistancesAbout( const Spectrum< double > &spectrum , int nodeIndex, double rho = std::numeric_limits< double >::max () ) const;
+	std::vector< double > computeSpectralDistancesAbout( const Spectrum< double > &spectrum , std::pair<int, Point3D< double >> & P, double rho = std::numeric_limits< double >::max () ) const;
 
-	std::vector< double > computeBiharmonicsAbout ( std::pair<int, Point3D< double >> & P, double rho = std::numeric_limits< double >::max () ) const;
+	double getSpectralArea( const Spectrum< double > &spectrum , int l ) const;
+	void initSpectralArea( const Spectrum< double > &spectrum );
 
-   double getAreaBiharmonic (int l) const;
-   void initAreaBiharmonic (int threads = 1);
-
-   void initMetricsBiharmonic (int threads = 1);
-
-
-	// Diffusion distance
-	double diffusionDist( int nodeX , int nodeY , double t0=0.2 ) const;
-	double diffusionDist( std::pair< int , Point3D< double > > P , int node , double t0=0.2 ) const;
-
-	std::vector< double > computeDiffusionsAbout( int nodeIndex , double t0=0.2 , double rho=std::numeric_limits< double >::max() ) const;
-	std::vector< double > computeDiffusionsAbout( std::pair< int , Point3D< double > > &P , double t0=0.2 , double rho=std::numeric_limits< double >::max () ) const;
-
-	void initMetricsDiffusion (double t = 0.1, int threads = 1);
-
-   double getAreaDiffusion (int l, double t = 0.1) const;
-   void initAreaDiffusion (double t = 0.1, int threads = 1);
+	void initSpectralMetrics( const Spectrum< double > &spectrum );
 };
 
 #include "TriMesh.inl"

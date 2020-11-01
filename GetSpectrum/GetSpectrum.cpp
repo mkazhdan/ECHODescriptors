@@ -50,7 +50,7 @@ void Usage( const char* ex )
 {
 	printf( "Usage %s:\n" , ex );
 	printf( "\t --%s <input mesh>\n" , In.name.c_str() );
-	printf( "\t[--%s <spectral dimension>=%d]\n" , SpectralDimension.name.c_str() );
+	printf( "\t[--%s <spectral dimension>=%d]\n" , SpectralDimension.name.c_str() , SpectralDimension.value );
 	printf( "\t[--%s <output spectrum>]\n" , Out.name.c_str() );
 	printf( "\t[--%s <offset>=%f]\n" , Offset.name.c_str() , Offset.value );
 	printf( "\t[--%s]\n" , Lump.name.c_str() );

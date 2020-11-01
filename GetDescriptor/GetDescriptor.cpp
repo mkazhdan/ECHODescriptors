@@ -43,7 +43,7 @@ DAMAGE.
 
 Misha::CmdLineParameter< std::string > In( "in" ) , Spec( "spec" ) , Out( "out" ); 
 Misha::CmdLineParameter< int > SourceNode( "vertex" ) , RadialBins( "rBins" , 5 ) , OutResolution( "resolution" ) , SourceFace( "tri") , DistanceType( "distance" , DISTANCE_BIHARMONIC );
-Misha::CmdLineParameter< float > threshFactor( "tau" , 0.08f ) , Deviation( "dev" , -1. );
+Misha::CmdLineParameter< float > threshFactor( "tau" , 0.08f ) , Deviation( "dev" , -1. ) , DiffusionTime( "diffusion" , 0.2f );
 Misha::CmdLineParameterArray< float , 3 > BC( "bc" );
 Misha::CmdLineReadable  Verbose( "verbose" ) , DiskSupport( "disk" );
 
@@ -62,6 +62,7 @@ Misha::CmdLineReadable* params[] =
     &SourceFace ,
     &BC ,
     &DistanceType ,
+    &DiffusionTime ,
     NULL
 };
 
@@ -80,6 +81,7 @@ void ShowUsage( const char* ex )
     printf( "\t[--%s <resampled output resolution>=<histogram radius>*2+1]\n" , OutResolution.name.c_str() );
     printf( "\t[--%s <distance type>=%d]\n" , DistanceType.name.c_str() , DistanceType.value );
     for( int i=0 ; i<DISTANCE_COUNT ; i++ ) printf( "\t\t%d] %s\n" , i , DistanceNames[i].c_str() );
+    printf( "\t[--%s <diffusion time>=%f]\n" , DiffusionTime.name.c_str() , DiffusionTime.value );
     printf( "\t[--%s]\n" , Verbose.name.c_str() );
     printf( "\t[--%s]\n" , DiskSupport.name.c_str() );
 }
@@ -140,6 +142,11 @@ void run( void )
 {
     Miscellany::Timer timer;
     std::vector< double > signalValues;
+    std::vector< Point2D< double > > triangleGradients;
+    std::vector< double > hks;
+    Spectrum< double > spectrum;
+    std::function< double ( double ) > spectralFunction = SpectralFunction( DistanceType.value , DiffusionTime.value );
+
 
     int nRadialBins = RadialBins.value;
 
@@ -162,36 +169,54 @@ void run( void )
 
     //==Load Spectral Decomposition==
     timer.reset();
-    if( Spec.set ) tMesh.readSpectralDecomposition( Spec.value );
-    else tMesh.setSpectralDecomposition();
+    if( Spec.set ) spectrum.read( Spec.value );
+    else           spectrum.set( vertices , triangles , 200 , 100.f , false );
     if( Verbose.set ) std::cout << "\tGot spectrum: " << timer.elapsed() << std::endl;
 
     // Compute + smooth HKS
-    std::vector< double > hks;
 
     timer.reset();
-    tMesh.vertexHKS( hks , 0.1 ); // 0.1 
+    tMesh.vertexHKS( spectrum , hks , 0.1 ); // 0.1 
     if( Verbose.set ) std::cout << "\tGot HKS: " << timer.elapsed() << std::endl;
 
+    WARN( "Why are we smoothing the HKS instead of using a larger time-step?" );
     timer.reset();
     tMesh.smoothVertexSignal( hks , 1.0e7 ); 
     if( Verbose.set ) std::cout << "\tSmoothed HKS: " << timer.elapsed() << std::endl;
 
-    std::vector< Point2D< double > > triangleGradients;
+
+    // [WARNING] We are re-scaling the eigenvectors here
+    if( IsSpectral( DistanceType.value ) )
+#pragma omp parallel for
+        for( int i=0 ; i<spectrum.size() ; i++ )
+        {
+            double scale = spectralFunction( spectrum.eValue(i) );
+            auto &ev = spectrum.eVector(i);
+            for( int j=0 ; j<ev.size() ; j++ ) ev[j] *= scale;
+        }
+
     timer.reset();
-    tMesh.initMetricsBiharmonic();
+    WARN( "Why are we initializing the metric using the biharmonic distance here?" );
+    if( IsSpectral( DistanceType.value ) ) tMesh.initSpectralMetrics( spectrum );
+    else tMesh.initEuclideanMetrics();
     tMesh.metricGradient( hks , triangleGradients );
     if( Verbose.set ) std::cout << "\tGot HKS gradients: " << timer.elapsed() << std::endl;
 
     // Compute support radius proportional to surface area
-    tMesh.initAreaBiharmonic();
+    if( IsSpectral( DistanceType.value ) ) tMesh.initSpectralArea( spectrum );
 
     float rho = (float)( threshFactor.value * std::sqrt( tMesh.totalArea () / M_PI ) );
 
     if( SourceNode.set && SourceNode.value<0 )
     {
         timer.reset();
-        for( int i=0 ; i<-SourceNode.value ; i++ ) RegularGrid< float , 2 > F = echo< float >( tMesh , triangleGradients, rand() % vertices.size() , rho , nRadialBins , DistanceType.value );
+verticesInNeighborhood = 0;
+        for( int i=0 ; i<-SourceNode.value ; i++ )
+        {
+            if( IsSpectral( DistanceType.value ) ) spectralEcho< float >( tMesh , spectrum , triangleGradients, rand() % vertices.size() , rho , nRadialBins );
+            else                                   geodesicEcho< float >( tMesh , triangleGradients, rand() % vertices.size() , rho , nRadialBins );
+        }
+std::cout << "Average vertices in neighborhood: " << (double)verticesInNeighborhood / (-SourceNode.value) << std::endl;
         if( Verbose.set ) std::cout << "\tGot " << (-SourceNode.value) << " ECHO descriptors: " << timer.elapsed() << std::endl;
     }
     else
@@ -200,8 +225,16 @@ void run( void )
         RegularGrid< float , 2 > F;
 
         timer.reset();
-        if( SourceNode.set ) F = echo< float >( tMesh , triangleGradients, SourceNode.value , rho , nRadialBins , DistanceType.value );
-        else                 F = echo< float >( tMesh , triangleGradients , std::pair< int , Point3D< double > >( SourceFace.value , Point3D< double >( BC.values[0] , BC.values[1] , BC.values[2] ) ) , rho , nRadialBins , DistanceType.value );
+        if( SourceNode.set )
+        {
+            if( IsSpectral( DistanceType.value ) ) F = spectralEcho< float >( tMesh , spectrum , triangleGradients, SourceNode.value , rho , nRadialBins );
+            else                                   F = geodesicEcho< float >( tMesh , triangleGradients, SourceNode.value , rho , nRadialBins );
+        }
+        else
+        {
+            if( IsSpectral( DistanceType.value ) ) F = spectralEcho< float >( tMesh , spectrum , triangleGradients , std::pair< int , Point3D< double > >( SourceFace.value , Point3D< double >( BC.values[0] , BC.values[1] , BC.values[2] ) ) , rho , nRadialBins );
+            else                                   F = geodesicEcho< float >( tMesh , triangleGradients , std::pair< int , Point3D< double > >( SourceFace.value , Point3D< double >( BC.values[0] , BC.values[1] , BC.values[2] ) ) , rho , nRadialBins );
+        }
         if( Verbose.set ) std::cout << "\tGot ECHO descriptor: " << timer.elapsed() << std::endl;
 
         if( DiskSupport.set ) F = ResampleSignalDisk( F , OutResolution.value , OutResolution.value );

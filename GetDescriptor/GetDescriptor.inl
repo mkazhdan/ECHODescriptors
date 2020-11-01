@@ -26,9 +26,6 @@ ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF S
 DAMAGE.
 */
 
-#ifndef ECHO
-#define ECHO
-
 #ifndef M_PI
 #define M_PI		3.14159265358979323846
 #endif 
@@ -42,17 +39,31 @@ DAMAGE.
 
 enum
 {
-	DISTANCE_BIHARMONIC ,
 	DISTANCE_GEODESIC ,
-	DISTANCE_DIFFUSION ,
+    DISTANCE_BIHARMONIC ,
+    DISTANCE_DIFFUSION ,
+    DISTANCE_COMMUTE ,
     DISTANCE_COUNT
 };
-const static std::string DistanceNames[] = { "biharmonic" , "geodesic" , "diffusion" };
 
+const static std::string DistanceNames[] = { "geodesic" , "biharmonic" , "diffusion" , "commute" };
 
-#ifndef T_DIFF
-#define T_DIFF 0.1
-#endif
+bool IsSpectral( int distanceType )
+{
+    if( distanceType==DISTANCE_BIHARMONIC || distanceType==DISTANCE_DIFFUSION || distanceType==DISTANCE_COMMUTE ) return true;
+}
+
+std::function< double (double) > SpectralFunction( int distType , double t )
+{
+    switch( distType )
+    {
+        case DISTANCE_BIHARMONIC: return [ ]( double ev ){ return fabs( ev )<1e-10 ? 1. : 1./ev; };
+        case DISTANCE_DIFFUSION:  return [&]( double ev ){ return exp( - ev * t ); };
+        case DISTANCE_COMMUTE:    return [ ]( double ev ){ return fabs( ev )<1e-10 ? 1. : 1./sqrt(ev); };
+        default: WARN( "Only biharmonic, diffusion, and commute spectral distances supported: " , distType );
+    }
+    return []( double ){ return 1.; };
+}
 
 struct QuadratureSample
 {
@@ -87,7 +98,7 @@ unsigned int computeTriangleWeights( const Point2D< double > v[] , const double 
 }
 
 template< class Real >
-void tangentsAtVertices( const TriMesh<Real> & tMesh,  const std::vector<Point2D<double>>& triangleGradients, std::vector<double>& sDistances, std::vector<Point2D<double> >& logTan, std::vector<double>& mags)
+void tangentsAtVertices( const TriMesh<Real> & tMesh,  const std::vector<Point2D<double>>& triangleGradients, const std::vector<double>& sDistances, std::vector<Point2D<double> >& logTan, std::vector<double>& mags)
 {
     std::vector< Point2D< double > > triDir;
     const std::vector< Point3D< Real > > &vertices = tMesh.vertices();
@@ -254,64 +265,51 @@ RegularGrid< Real , 2 > echo( const TriMesh< Real > &tMesh , const std::vector< 
 }
 
 
+static long long verticesInNeighborhood = 0;
 
-template< class Real , unsigned int nSamples = 7>
-RegularGrid< Real , 2 > echo( const TriMesh< Real > &tMesh , const std::vector< Point2D< double > > &triangleGradients , int nodeIndex , double supportRadius, unsigned int descriptorRadius, int distFlag = DISTANCE_BIHARMONIC)
+template< class Real , unsigned int nSamples=7 >
+RegularGrid< Real , 2 > echoFromDistances( const TriMesh< Real > &tMesh , const std::vector< Point2D< double > > &triangleGradients , const std::vector< double > sDistances , double supportRadius , unsigned int descriptorRadius )
 {
-    // Compute surface distances
-    std::vector< double > sDistances;
+for( int i=0 ; i<sDistances.size() ; i++ ) if( sDistances[i]<std::numeric_limits< double >::max() ) verticesInNeighborhood++;
 
-    switch( distFlag )
-    {
-        case DISTANCE_GEODESIC:   sDistances = tMesh.computeGeodesicsAbout  ( nodeIndex , (float)supportRadius) ; break;
-        case DISTANCE_DIFFUSION:  sDistances = tMesh.computeDiffusionsAbout ( nodeIndex , T_DIFF , supportRadius ) ; break;
-        case DISTANCE_BIHARMONIC: sDistances = tMesh.computeBiharmonicsAbout( nodeIndex , supportRadius ) ; break;
-        default: ERROR_OUT( "Unrecognized distance flag: " , distFlag );
-    }
+    // Pre-compute tangent space coordinates + signal
+    std::vector< Point2D< double > > logTan;
+    std::vector< double > mags;
 
-   // Pre-compute tangent space coordinates + signal
-   std::vector< Point2D< double > > logTan;
-   std::vector< double > mags;
+    tangentsAtVertices( tMesh , triangleGradients , sDistances , logTan , mags );
 
-   tangentsAtVertices( tMesh , triangleGradients , sDistances , logTan , mags );
-
-   // Compute descriptor
-   return echo<Real, nSamples> (tMesh, logTan, mags, supportRadius, descriptorRadius);
-
+    // Compute descriptor
+    return echo< Real , nSamples >( tMesh , logTan , mags , supportRadius , descriptorRadius );
 }
 
-template< class Real, unsigned int nSamples = 7>
-RegularGrid< Real , 2 > echo( const TriMesh< Real > &tMesh , const std::vector< Point2D< double > > &triangleGradients , std::pair< int , Point3D< double > > P , double supportRadius, unsigned int descriptorRadius, int distFlag = DISTANCE_BIHARMONIC )
+template< class Real , unsigned int nSamples=7 >
+RegularGrid< Real , 2 > spectralEcho( const TriMesh< Real > &tMesh , const Spectrum< double > &spectrum , const std::vector< Point2D< double > > &triangleGradients , int nodeIndex , double supportRadius, unsigned int descriptorRadius )
 {
     // Compute surface distances
-	std::vector<double> sDistances;
-
-   if (distFlag == DISTANCE_GEODESIC)
-   {
-      sDistances = tMesh.computeGeodesicsAbout ( P, (float)supportRadius );
-   }
-   else if ( distFlag == DISTANCE_DIFFUSION)
-   {
-      sDistances = tMesh.computeDiffusionsAbout (P, T_DIFF, supportRadius );
-   }
-   else
-   {
-      sDistances = tMesh.computeBiharmonicsAbout (P, supportRadius);
-   }
-
-   // Pre-compute tangent space coordinates + signal
-   std::vector< Point2D< double > > logTan;
-   std::vector< double > mags;
-
-   tangentsAtVertices( tMesh , triangleGradients , sDistances , logTan , mags );
-
-   // Compute descriptor
-   return echo<Real, nSamples> (tMesh, logTan, mags, supportRadius, descriptorRadius);
+    std::vector< double > sDistances = tMesh.computeSpectralDistancesAbout( spectrum , nodeIndex , supportRadius );
+    return echoFromDistances( tMesh , triangleGradients , sDistances , supportRadius , descriptorRadius );
 }
 
+template< class Real , unsigned int nSamples=7 >
+RegularGrid< Real , 2 > geodesicEcho( const TriMesh< Real > &tMesh , const std::vector< Point2D< double > > &triangleGradients , int nodeIndex , double supportRadius , unsigned int descriptorRadius )
+{
+    // Compute surface distances
+    std::vector< double > sDistances = tMesh.computeGeodesicsAbout( nodeIndex , (float)supportRadius );
+    return echoFromDistances( tMesh , triangleGradients , sDistances , supportRadius , descriptorRadius );
+}
 
+template< class Real , unsigned int nSamples=7 >
+RegularGrid< Real , 2 > spectralEcho( const TriMesh< Real > &tMesh , const Spectrum< double > &spectrum , const std::vector< Point2D< double > > &triangleGradients , std::pair< int , Point3D< double > > P , double supportRadius , unsigned int descriptorRadius )
+{
+    // Compute surface distances
+    std::vector< double > sDistances = tMesh.computeSpectralDistancesAbout ( spectrum , P , supportRadius );
+    return echoFromDistances( tMesh , triangleGradients , sDistances , supportRadius , descriptorRadius );
+}
 
-
-
-#endif
-
+template< class Real , unsigned int nSamples=7 >
+RegularGrid< Real , 2 > geodesicEcho( const TriMesh< Real > &tMesh , const std::vector< Point2D< double > > &triangleGradients , std::pair< int , Point3D< double > > P , double supportRadius , unsigned int descriptorRadius )
+{
+    // Compute surface distances
+    std::vector< double > sDistances = tMesh.computeGeodesicsAbout  ( P , (float)supportRadius );
+    return echoFromDistances( tMesh , triangleGradients , sDistances , supportRadius , descriptorRadius );
+}
