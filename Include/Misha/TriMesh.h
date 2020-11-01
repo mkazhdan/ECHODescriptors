@@ -50,7 +50,6 @@ typedef DGPC::MeshOM<PointOM> repOM;
 typedef DGPC::Generator<repOM> DGPCgenerator;
 
 
-// This class represents a set of regular samples of a real-valued, periodic, function in 3D
 template< class Real=float >
 class TriMesh
 {
@@ -138,7 +137,7 @@ public:
 	// Computes gradient of implicit function at all triangles
    void metricGradient( const std::vector< double >& Implciit , std::vector<Point2D< double > > &triGrads ) const;
 
-   // Metric dot
+   // Tangent space operations
    double metricDot( int l, const Point2D< double >& w1, const Point2D< double >& w2 ) const;
 
    double metricSquareNorm( int l , const Point2D< double >& w ) const;

@@ -51,6 +51,7 @@ const static std::string DistanceNames[] = { "geodesic" , "biharmonic" , "diffus
 bool IsSpectral( int distanceType )
 {
     if( distanceType==DISTANCE_BIHARMONIC || distanceType==DISTANCE_DIFFUSION || distanceType==DISTANCE_COMMUTE ) return true;
+    else return false;
 }
 
 std::function< double (double) > SpectralFunction( int distType , double t )
@@ -60,7 +61,8 @@ std::function< double (double) > SpectralFunction( int distType , double t )
         case DISTANCE_BIHARMONIC: return [ ]( double ev ){ return fabs( ev )<1e-10 ? 1. : 1./ev; };
         case DISTANCE_DIFFUSION:  return [&]( double ev ){ return exp( - ev * t ); };
         case DISTANCE_COMMUTE:    return [ ]( double ev ){ return fabs( ev )<1e-10 ? 1. : 1./sqrt(ev); };
-        default: WARN( "Only biharmonic, diffusion, and commute spectral distances supported: " , distType );
+        case DISTANCE_GEODESIC: return []( double ){ return 1.; };
+        default: WARN( "Only biharmonic, diffusion, and commute-time spectral distances supported: " , distType );
     }
     return []( double ){ return 1.; };
 }

@@ -43,7 +43,7 @@ DAMAGE.
 
 Misha::CmdLineParameter< std::string > In( "in" ) , Spec( "spec" ) , Out( "out" ); 
 Misha::CmdLineParameter< int > SourceNode( "vertex" ) , RadialBins( "rBins" , 5 ) , OutResolution( "resolution" ) , SourceFace( "tri") , DistanceType( "distance" , DISTANCE_BIHARMONIC );
-Misha::CmdLineParameter< float > threshFactor( "tau" , 0.08f ) , Deviation( "dev" , -1. ) , DiffusionTime( "diffusion" , 0.2f );
+Misha::CmdLineParameter< float > threshFactor( "tau" , 0.08f ) , Deviation( "dev" , -1. ) , DiffusionTime( "diffusion" , 0.1f );
 Misha::CmdLineParameterArray< float , 3 > BC( "bc" );
 Misha::CmdLineReadable  Verbose( "verbose" ) , DiskSupport( "disk" );
 
@@ -147,7 +147,6 @@ void run( void )
     Spectrum< double > spectrum;
     std::function< double ( double ) > spectralFunction = SpectralFunction( DistanceType.value , DiffusionTime.value );
 
-
     int nRadialBins = RadialBins.value;
 
     //==Load Mesh===
@@ -176,10 +175,10 @@ void run( void )
     // Compute + smooth HKS
 
     timer.reset();
-    tMesh.vertexHKS( spectrum , hks , 0.1 ); // 0.1 
+    tMesh.vertexHKS( spectrum , hks , 0.1 );  
     if( Verbose.set ) std::cout << "\tGot HKS: " << timer.elapsed() << std::endl;
 
-    WARN( "Why are we smoothing the HKS instead of using a larger time-step?" );
+    //WARN( "Why are we smoothing the HKS instead of using a larger time-step?" );
     timer.reset();
     tMesh.smoothVertexSignal( hks , 1.0e7 ); 
     if( Verbose.set ) std::cout << "\tSmoothed HKS: " << timer.elapsed() << std::endl;
@@ -196,14 +195,14 @@ void run( void )
         }
 
     timer.reset();
-    WARN( "Why are we initializing the metric using the biharmonic distance here?" );
+    //WARN( "Why are we initializing the metric using the biharmonic distance here?" );
     if( IsSpectral( DistanceType.value ) ) tMesh.initSpectralMetrics( spectrum );
-    else tMesh.initEuclideanMetrics();
+    else {tMesh.initEuclideanMetrics(); tMesh.initGeodesicCalc ();}
     tMesh.metricGradient( hks , triangleGradients );
     if( Verbose.set ) std::cout << "\tGot HKS gradients: " << timer.elapsed() << std::endl;
 
     // Compute support radius proportional to surface area
-    if( IsSpectral( DistanceType.value ) ) tMesh.initSpectralArea( spectrum );
+    if( IsSpectral( DistanceType.value ) )  tMesh.initSpectralArea( spectrum );
 
     float rho = (float)( threshFactor.value * std::sqrt( tMesh.totalArea () / M_PI ) );
 

@@ -771,7 +771,7 @@ void TriMesh< Real >::setGeodesicEpsilon( double epsilon )
 template< class Real >
 void TriMesh< Real >::initGeodesicCalc( void )
 {
-    _surfaceMesh.fromTriangles( vertices , triangles );
+    _surfaceMesh.fromTriangles( _vertices , _triangles );
 }
 
 template< class Real >
