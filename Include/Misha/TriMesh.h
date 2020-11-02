@@ -29,7 +29,7 @@ DAMAGE.
 #ifndef TRIMESH_INCLUDED
 #define TRIMESH_INCLUDED
 
-#define MISHA_CODE
+#define PRECOMPUTE_TRIANGLE_AREAS
 
 #include <vector>
 #include <omp.h>
@@ -48,8 +48,8 @@ DAMAGE.
 #include "DGPC/Generator.h"
 
 typedef DGPC::Vector3< double > PointOM;
-typedef DGPC::MeshOM<PointOM> repOM;
-typedef DGPC::Generator<repOM> DGPCgenerator;
+typedef DGPC::MeshOM< PointOM > repOM;
+typedef DGPC::Generator< repOM > DGPCgenerator;
 
 
 template< class Real=float >
@@ -59,7 +59,9 @@ protected:
 	const std::vector< Point3D< Real > > &_vertices;
 	const std::vector< TriangleIndex > &_triangles;
 
+#ifdef PRECOMPUTE_TRIANGLE_AREAS
 	std::vector< Real > _triangleAreas;
+#endif // PRECOMPUTE_TRIANGLE_AREAS
 
 	std::vector< std::vector< TriangleIndex > > _vertexStars;
 	std::vector< std::vector< int > > _starTriangles;
@@ -105,7 +107,6 @@ public:
    Point2D< double > metricRotate90 ( int l, const Point2D< double >& w) const;
 
 	// Smooth vertex signal
-	void returnMassStiffness( Real diffTime , SparseMatrix< double , int > &mass , SparseMatrix< double , int >& stiffness );
 	void smoothVertexSignal( std::vector< double >& Implicit , Real diffTime );
 
 

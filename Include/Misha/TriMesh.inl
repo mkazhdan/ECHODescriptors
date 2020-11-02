@@ -62,18 +62,11 @@ TriMesh< Real >::TriMesh( const std::vector< Point3D< Real > > &vertices , const
 template< class Real >
 Real TriMesh< Real >::triangleArea( int l ) const
 {
-#if 0 // This would allow us to get rid of _triangleAreas but it is slower
-    Point3D< double > edgeLengths;
-    edgeLengths[0] = std::sqrt( _triangleMetrics[l][0] + _triangleMetrics[l][2] - 2. * _triangleMetrics[l][1] );
-    edgeLengths[1] = std::sqrt( _triangleMetrics[l][2] );
-    edgeLengths[2] = std::sqrt( _triangleMetrics[l][0] );
-
-    double s = ( edgeLengths[0] + edgeLengths[1] + edgeLengths[2] ) / 2;
-    return std::sqrt( s * ( s - edgeLengths[0] ) * ( s - edgeLengths[1] ) * ( s - edgeLengths[2] ) );
-
-#else
+#ifdef PRECOMPUTE_TRIANGLE_AREAS
     return _triangleAreas[l];
-#endif
+#else // !PRECOMPUTE_TRIANGLE_AREAS
+    return std::sqrt( _triangleMetrics[l][0] * _triangleMetrics[l][2] - _triangleMetrics[l][1] * _triangleMetrics[l][1] ) / 2.;
+#endif // PRECOMPUTE_TRIANGLE_AREAS
 }
 
 template< class Real >
@@ -81,7 +74,11 @@ Real TriMesh< Real >::totalArea( void ) const
 {
     Real A = 0.0;
 
+#ifdef PRECOMPUTE_TRIANGLE_AREAS
     for( int l=0 ; l<_triangleAreas.size() ; l++ ) A += _triangleAreas[l];
+#else // !PRECOMPUTE_TRIANGLE_AREAS
+    for( int l=0 ; l<_triangles.size() ; l++ ) A += triangleArea(l);
+#endif // PRECOMPUTE_TRIANGLE_AREAS
 
     return A;
 }
@@ -103,7 +100,9 @@ template< typename TriangleSquareEdgeLengthFunctor >
 void TriMesh< Real >::initMetricsFromSquareEdgeLengths( TriangleSquareEdgeLengthFunctor F )
 {
     _triangleMetrics.resize( _triangles.size() );
+#ifdef PRECOMPUTE_TRIANGLE_AREAS
     _triangleAreas.resize( _triangles.size() );
+#endif // PRECOMPUTE_TRIANGLE_AREAS
 
 #pragma omp parallel for
     for( int i=0 ; i<_triangles.size() ; i++ )
@@ -114,10 +113,9 @@ void TriMesh< Real >::initMetricsFromSquareEdgeLengths( TriangleSquareEdgeLength
         _triangleMetrics[i][1] = ( squareEdgeLengths[2] + squareEdgeLengths[1] - squareEdgeLengths[0] ) / 2;
         _triangleMetrics[i][2] = squareEdgeLengths[1];
 
-        Point3D< double > edgeLengths( std::sqrt( squareEdgeLengths[0] ) , std::sqrt( squareEdgeLengths[1] ) , std::sqrt( squareEdgeLengths[2] ) );
-        double s = ( edgeLengths[0] + edgeLengths[1] + edgeLengths[2] ) / 2;
-
-        _triangleAreas[i] = std::sqrt ( s * ( s - edgeLengths[0] ) * ( s - edgeLengths[1] ) * ( s - edgeLengths[2] ) );
+#ifdef PRECOMPUTE_TRIANGLE_AREAS
+        _triangleAreas[i] = std::sqrt( _triangleMetrics[i][0] * _triangleMetrics[i][2] - _triangleMetrics[i][1] * _triangleMetrics[i][1] ) / 2.;
+#endif // PRECOMPUTE_TRIANGLE_AREAS
     }
 }
 
@@ -231,59 +229,27 @@ Point2D< double > TriMesh< Real >::metricRotate90 ( int l , const Point2D< doubl
 }
 
 template< class Real >
-void TriMesh< Real >::returnMassStiffness( Real diffTime , SparseMatrix< double , int >& mass , SparseMatrix< double , int >& stiffness )
-{
-    FEM::RiemannianMesh< double > mesh( GetPointer( _triangles ) , _triangles.size() );
-    mesh.setMetricFromEmbedding<3>( [&]( unsigned int idx ){ return _vertices[idx]; } );
-
-    mesh.makeUnitArea();
-
-    mass = mesh.template massMatrix< FEM::BASIS_0_WHITNEY >() * diffTime;
-    stiffness = mesh.template stiffnessMatrix< FEM::BASIS_0_WHITNEY >();
-}
-
-template< class Real >
-void TriMesh< Real >::smoothVertexSignal( std::vector< double > &Implicit , Real diffTime )
+void TriMesh< Real >::smoothVertexSignal( std::vector< double > &x , Real diffTime )
 {
     // Normalize mesh to have unit area
     FEM::RiemannianMesh< double > mesh( GetPointer( _triangles ) , _triangles.size() );
     mesh.template setMetricFromEmbedding< 3 >( [&]( unsigned int idx ){ return Point3D< double >( _vertices[idx] ); } );
-    double area = mesh.area();
     mesh.makeUnitArea();
 
     // Compute and solve the system
 
-    SparseMatrix< double , int > m = mesh.template massMatrix< FEM::BASIS_0_WHITNEY >() * diffTime;
-    SparseMatrix< double , int > s = mesh.template stiffnessMatrix< FEM::BASIS_0_WHITNEY >();
+    SparseMatrix< double , int > M = mesh.template massMatrix< FEM::BASIS_0_WHITNEY >() * diffTime;
+    SparseMatrix< double , int > S = mesh.template stiffnessMatrix< FEM::BASIS_0_WHITNEY >();
 
-    SparseMatrix< double , int > M = m + s;
+#pragma omp parallel for
+    for( int i=0 ; i<S.rows ; i++ ) for( int j=0 ; j<S.rowSizes[i] ; j++ ) S[i][j].Value += M[i][j].Value;
 
-    EigenSolverCholeskyLLt< double > llt( M , false );
+    EigenSolverCholeskyLLt< double > llt( S );
 
-    llt.update( M );
+    std::vector< double > b( _vertices.size() );
 
-
-    Pointer( double ) x = AllocPointer< double >( _vertices.size() );
-    Pointer( double ) b = AllocPointer< double >( _vertices.size() );
-
-    for( int i=0 ; i<_vertices.size() ; i++ ) 
-    { 
-        if ( !std::isnan( Implicit[i] ) ) x[i] = Implicit[i];
-        else                              x[i] = 0.0;
-    }
-
-    m.Multiply( x , b );
-
-    for( int i=0 ; i<_vertices.size () ; i++ ) x[i] *= 0.0;
-
-    s.Multiply (x, b, MULTIPLY_ADD);
-
-    llt.solve( b , x );
-
-    for( int i=0 ; i<_vertices.size() ; i++ ) Implicit[i] = x[i];
-
-    FreePointer (x);
-    FreePointer (b);
+    M.Multiply( ( ConstPointer( double ) )GetPointer( x ) , GetPointer( b ) );
+    llt.solve( ( ConstPointer( double ) )GetPointer( b ) , GetPointer( x ) );
 }
 
 
