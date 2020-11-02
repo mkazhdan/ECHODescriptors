@@ -124,7 +124,6 @@ void tangentsAtVertices( const TriMesh<Real> & tMesh,  const std::vector<Point2D
 
             geoGrad /= std::sqrt(tMesh.metricSquareNorm(l, geoGrad)) * -1;
 
-
             double detR = tangentX[0] * tangentY[1] - tangentX[1] * tangentY[0];
 
             triDir[l][0] = (tangentY[1] * geoGrad[0] - tangentY[0] * geoGrad[1]) / detR;
