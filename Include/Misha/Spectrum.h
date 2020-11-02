@@ -47,11 +47,16 @@ struct Spectrum
 	Real spectralDistance( unsigned int i , TriangleIndex tri , Point3D< Real > weights , int beginE , int endE ) const;
 	Real biharmonicDistance( unsigned int i , unsigned int j ) const;
 	Real biharmonicDistance( unsigned int i , TriangleIndex tri , Point3D< Real > weights ) const;
+	Real commuteDistance( unsigned int i , unsigned int j ) const;
+	Real commuteDistance( unsigned int i , TriangleIndex tri , Point3D< Real > weights ) const;
+	Real diffusionDistance( Real diffusionTime , unsigned int i , unsigned int j ) const;
+	Real diffusionDistance( Real diffusionTime , unsigned int i , TriangleIndex tri , Point3D< Real > weights ) const;
 	size_t size( void ) const { return _eigenvalues.size(); }
 	Real &eValue( unsigned int idx ){ return _eigenvalues[idx]; }
 	const Real &eValue( unsigned int idx ) const { return _eigenvalues[idx]; }
 	std::vector< Real > &eVector( unsigned int idx ){ return _eigenvectors[idx]; }
 	const std::vector< Real > &eVector( unsigned int idx ) const { return _eigenvectors[idx]; }
+	Real HKS( unsigned int i , Real diffusionTime ) const;
 protected:
 	static const unsigned long long _MAGIC_NUMBER;
 	std::vector< Real > _eigenvalues;
@@ -322,6 +327,34 @@ template< typename Real >
 Real Spectrum< Real >::biharmonicDistance( unsigned int i , TriangleIndex tri , Point3D< Real> weights ) const
 {
 	return spectralDistance( []( double ev ){ return 1./ev; } , i , tri , weights , 1 , _eigenvectors.size() );
+}
+template< typename Real >
+Real Spectrum< Real >::commuteDistance( unsigned int i , unsigned int j ) const
+{
+	return spectralDistance( []( double ev ){ return 1./std::sqrt(ev); } , i , j , 1 , _eigenvectors.size() );
+}
+template< typename Real >
+Real Spectrum< Real >::commuteDistance( unsigned int i , TriangleIndex tri , Point3D< Real> weights ) const
+{
+	return spectralDistance( []( double ev ){ return 1./std::sqrt(ev); } , i , tri , weights , 1 , _eigenvectors.size() );
+}
+template< typename Real >
+Real Spectrum< Real >::diffusionDistance( Real diffusionTime , unsigned int i , unsigned int j ) const
+{
+	return spectralDistance( [&]( double ev ){ (Real)exp( - ev * diffusionTime ); } , i , j , 1 , _eigenvectors.size() );
+}
+template< typename Real >
+Real Spectrum< Real >::diffusionDistance( Real diffusionTime , unsigned int i , TriangleIndex tri , Point3D< Real> weights ) const
+{
+	return spectralDistance( [&]( double ev ){ (Real)exp( - ev * diffusionTime ); } , i , tri , weights , 1 , _eigenvectors.size() );
+}
+
+template< typename Real >
+Real Spectrum< Real >::HKS( unsigned int i , Real diffusionTime ) const
+{
+	Real hks = (Real)0;
+	for( int j=0 ; j<_eigenvectors.size() ; j++ ) hks += (Real)( exp( - _eigenvalues[j] * diffusionTime ) * _eigenvectors[j][i] * _eigenvectors[j][i] );
+	return hks;
 }
 
 #endif // SPECTRUM_INCLUDED

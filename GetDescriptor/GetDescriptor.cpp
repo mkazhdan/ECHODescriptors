@@ -162,20 +162,26 @@ void run( void )
         for( int i=0 ; i<_vertices.size() ; i++ ) vertices[i] = Point3D< float >( _vertices[i].get<0>() );
     }
 
+    //==Load Spectral Decomposition==
+    timer.reset();
+    if( Spec.set ) spectrum.read( Spec.value );
+    else
+    {
+        spectrum.set( vertices , triangles , 200 , 100.f , false );
+    }
+    if( Verbose.set ) std::cout << "\tGot spectrum: " << timer.elapsed() << std::endl;
+
+
     //=== Load PLY=====
     TriMesh< float > tMesh( vertices , triangles );
     if( Verbose.set ) std::cout << "\tGot mesh: " << timer.elapsed() << std::endl;
 
-    //==Load Spectral Decomposition==
-    timer.reset();
-    if( Spec.set ) spectrum.read( Spec.value );
-    else           spectrum.set( vertices , triangles , 200 , 100.f , false );
-    if( Verbose.set ) std::cout << "\tGot spectrum: " << timer.elapsed() << std::endl;
-
     // Compute + smooth HKS
 
     timer.reset();
-    tMesh.vertexHKS( spectrum , hks , 0.1 );  
+    hks.resize( vertices.size() );
+#pragma omp parallel for
+    for( int i=0 ; i<vertices.size() ; i++ ) hks[i] = spectrum.HKS( i , 0.1 );
     if( Verbose.set ) std::cout << "\tGot HKS: " << timer.elapsed() << std::endl;
 
     //WARN( "Why are we smoothing the HKS instead of using a larger time-step?" );
@@ -195,16 +201,32 @@ void run( void )
         }
 
     timer.reset();
-    //WARN( "Why are we initializing the metric using the biharmonic distance here?" );
-    if( IsSpectral( DistanceType.value ) ) tMesh.initSpectralMetrics( spectrum );
-    else {tMesh.initEuclideanMetrics(); tMesh.initGeodesicCalc ();}
+    if( IsSpectral( DistanceType.value ) )
+    {
+        auto squareEdgeLengthFunctor = [&]( TriangleIndex tri )
+        {
+            Point3D< double > d;
+            for( int i=0 ; i<3 ; i++ ) d[i] = spectrum.spectralDistance( tri[(i+1)%3] , tri[(i+2)%3] , 1 , spectrum.size() );
+            for( int i=0 ; i<3 ; i++ ) d[i] *= d[i];
+            return d;
+        };
+        tMesh.initMetricsFromSquareEdgeLengths( squareEdgeLengthFunctor );
+    }
+    else
+    {
+        auto squareEdgeLengthFunctor = [&]( TriangleIndex tri )
+        {
+            Point3D< double > d;
+            for( int i=0 ; i<3 ; i++ ) d[i] = ( vertices[ tri[(i+1)%3] ] - vertices[ tri[(i+2)%3] ] ).squareNorm();
+            return d;
+        };
+        tMesh.initMetricsFromSquareEdgeLengths( squareEdgeLengthFunctor );
+        tMesh.initGeodesicCalc();
+    }
     tMesh.metricGradient( hks , triangleGradients );
     if( Verbose.set ) std::cout << "\tGot HKS gradients: " << timer.elapsed() << std::endl;
 
-    // Compute support radius proportional to surface area
-    if( IsSpectral( DistanceType.value ) )  tMesh.initSpectralArea( spectrum );
-
-    float rho = (float)( threshFactor.value * std::sqrt( tMesh.totalArea () / M_PI ) );
+    float rho = (float)( threshFactor.value * std::sqrt( tMesh.totalArea() / M_PI ) );
 
     if( SourceNode.set && SourceNode.value<0 )
     {

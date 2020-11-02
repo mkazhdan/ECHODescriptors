@@ -77,6 +77,10 @@
     <OutDir>$(SolutionDir)\Bin\$(Platform)\</OutDir>
     <IntDir>$(SolutionDir)\Obj\$(Platform)\</IntDir>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)\Bin\$(Platform)\</OutDir>
+    <IntDir>$(SolutionDir)\Obj\$(Platform)\</IntDir>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Midl>
       <WarningLevel>0</WarningLevel>
@@ -139,7 +143,7 @@
       <PreprocessorDefinitions>UNICODE;WIN32;QT_LARGEFILE_SUPPORT;_USE_MATH_DEFINES;NOMINMAX;QT_THREAD_SUPPORT;QT_WEBKIT_LIB;QT_SCRIPT_LIB;QT_SQL_LIB;QT_XML_LIB;QT_OPENGL_LIB;QT_GUI_LIB;QT_NETWORK_LIB;QT_CORE_LIB;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Lib>
-      <OutputFile>$(SolutionDir)\lib\libOpenMeshCored.lib</OutputFile>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
     </Lib>
   </ItemDefinitionGroup>
