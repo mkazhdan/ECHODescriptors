@@ -65,7 +65,7 @@ Real TriMesh< Real >::triangleArea( int l ) const
 #ifdef PRECOMPUTE_TRIANGLE_AREAS
     return _triangleAreas[l];
 #else // !PRECOMPUTE_TRIANGLE_AREAS
-    return std::sqrt( _triangleMetrics[l][0] * _triangleMetrics[l][2] - _triangleMetrics[l][1] * _triangleMetrics[l][1] ) / 2.;
+    return std::sqrt( std::fabs( _triangleMetrics[l][0] * _triangleMetrics[l][2] - _triangleMetrics[l][1] * _triangleMetrics[l][1] ) ) / 2.;
 #endif // PRECOMPUTE_TRIANGLE_AREAS
 }
 
@@ -114,7 +114,7 @@ void TriMesh< Real >::initMetricsFromSquareEdgeLengths( TriangleSquareEdgeLength
         _triangleMetrics[i][2] = squareEdgeLengths[1];
 
 #ifdef PRECOMPUTE_TRIANGLE_AREAS
-        _triangleAreas[i] = std::sqrt( _triangleMetrics[i][0] * _triangleMetrics[i][2] - _triangleMetrics[i][1] * _triangleMetrics[i][1] ) / 2.;
+        _triangleAreas[i] = std::sqrt( std::fabs( _triangleMetrics[i][0] * _triangleMetrics[i][2] - _triangleMetrics[i][1] * _triangleMetrics[i][1] ) ) / 2.;
 #endif // PRECOMPUTE_TRIANGLE_AREAS
     }
 }
