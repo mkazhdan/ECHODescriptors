@@ -266,12 +266,16 @@ RegularGrid< Real , 2 > echo( const TriMesh< Real > &tMesh , const std::vector< 
 }
 
 
+#ifdef DEBUG_DESCRIPTOR
 static long long verticesInNeighborhood = 0;
+#endif // DEBUG_DESCRIPTOR
 
 template< class Real , unsigned int nSamples=7 >
 RegularGrid< Real , 2 > echoFromDistances( const TriMesh< Real > &tMesh , const std::vector< Point2D< double > > &triangleGradients , const std::vector< double > sDistances , double supportRadius , unsigned int descriptorRadius )
 {
-for( int i=0 ; i<sDistances.size() ; i++ ) if( sDistances[i]<std::numeric_limits< double >::max() ) verticesInNeighborhood++;
+#ifdef DEBUG_DESCRIPTOR
+    for( int i=0 ; i<sDistances.size() ; i++ ) if( sDistances[i]<std::numeric_limits< double >::max() ) verticesInNeighborhood++;
+#endif // DEBUG_DESCRIPTOR
 
     // Pre-compute tangent space coordinates + signal
     std::vector< Point2D< double > > logTan;

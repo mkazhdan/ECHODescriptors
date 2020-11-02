@@ -38,6 +38,8 @@ DAMAGE.
 #include <Misha/Miscellany.h>
 #include <Misha/PlyVertexData.h>
 #include <Misha/Miscellany.h>
+
+#define DEBUG_DESCRIPTOR
 #include "GetDescriptor.inl"
 
 
@@ -161,23 +163,16 @@ void run( void )
         vertices.resize( _vertices.size() );
         for( int i=0 ; i<_vertices.size() ; i++ ) vertices[i] = Point3D< float >( _vertices[i].get<0>() );
     }
+    TriMesh< float > tMesh( vertices , triangles );
+    if( Verbose.set ) std::cout << "\tGot mesh: " << timer.elapsed() << std::endl;
 
     //==Load Spectral Decomposition==
     timer.reset();
     if( Spec.set ) spectrum.read( Spec.value );
-    else
-    {
-        spectrum.set( vertices , triangles , 200 , 100.f , false );
-    }
+    else           spectrum.set( vertices , triangles , 200 , 100.f , false );
     if( Verbose.set ) std::cout << "\tGot spectrum: " << timer.elapsed() << std::endl;
 
-
-    //=== Load PLY=====
-    TriMesh< float > tMesh( vertices , triangles );
-    if( Verbose.set ) std::cout << "\tGot mesh: " << timer.elapsed() << std::endl;
-
     // Compute + smooth HKS
-
     timer.reset();
     hks.resize( vertices.size() );
 #pragma omp parallel for
@@ -231,13 +226,17 @@ void run( void )
     if( SourceNode.set && SourceNode.value<0 )
     {
         timer.reset();
-verticesInNeighborhood = 0;
+#ifdef DEBUG_DESCRIPTOR
+        verticesInNeighborhood = 0;
+#endif // DEBUG_DESCRIPTOR
         for( int i=0 ; i<-SourceNode.value ; i++ )
         {
             if( IsSpectral( DistanceType.value ) ) spectralEcho< float >( tMesh , spectrum , triangleGradients, rand() % vertices.size() , rho , nRadialBins );
             else                                   geodesicEcho< float >( tMesh , triangleGradients, rand() % vertices.size() , rho , nRadialBins );
         }
-std::cout << "Average vertices in neighborhood: " << (double)verticesInNeighborhood / (-SourceNode.value) << std::endl;
+#ifdef DEBUG_DESCRIPTOR
+        if( Verbose.set ) std::cout << "\t\tAverage vertices in neighborhood: " << (double)verticesInNeighborhood / (-SourceNode.value) << std::endl;
+#endif // DEBUG_DESCRIPTOR
         if( Verbose.set ) std::cout << "\tGot " << (-SourceNode.value) << " ECHO descriptors: " << timer.elapsed() << std::endl;
     }
     else
@@ -246,6 +245,9 @@ std::cout << "Average vertices in neighborhood: " << (double)verticesInNeighborh
         RegularGrid< float , 2 > F;
 
         timer.reset();
+#ifdef DEBUG_DESCRIPTOR
+        verticesInNeighborhood = 0;
+#endif // DEBUG_DESCRIPTOR
         if( SourceNode.set )
         {
             if( IsSpectral( DistanceType.value ) ) F = spectralEcho< float >( tMesh , spectrum , triangleGradients, SourceNode.value , rho , nRadialBins );
@@ -256,6 +258,9 @@ std::cout << "Average vertices in neighborhood: " << (double)verticesInNeighborh
             if( IsSpectral( DistanceType.value ) ) F = spectralEcho< float >( tMesh , spectrum , triangleGradients , std::pair< int , Point3D< double > >( SourceFace.value , Point3D< double >( BC.values[0] , BC.values[1] , BC.values[2] ) ) , rho , nRadialBins );
             else                                   F = geodesicEcho< float >( tMesh , triangleGradients , std::pair< int , Point3D< double > >( SourceFace.value , Point3D< double >( BC.values[0] , BC.values[1] , BC.values[2] ) ) , rho , nRadialBins );
         }
+#ifdef DEBUG_DESCRIPTOR
+        if( Verbose.set ) std::cout << "\t\Vertices in neighborhood: " << verticesInNeighborhood << std::endl;
+#endif // DEBUG_DESCRIPTOR
         if( Verbose.set ) std::cout << "\tGot ECHO descriptor: " << timer.elapsed() << std::endl;
 
         if( DiskSupport.set ) F = ResampleSignalDisk( F , OutResolution.value , OutResolution.value );
