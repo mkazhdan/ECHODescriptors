@@ -164,25 +164,25 @@ void run( void )
         for( int i=0 ; i<_vertices.size() ; i++ ) vertices[i] = Point3D< float >( _vertices[i].get<0>() );
     }
     TriMesh< float > tMesh( vertices , triangles );
-    if( Verbose.set ) std::cout << "\tGot mesh: " << timer.elapsed() << std::endl;
+    if( Verbose.set ) std::cout << "\tGot mesh: " << timer.elapsed() << " (s)" << std::endl;
 
     //==Load Spectral Decomposition==
     timer.reset();
     if( Spec.set ) spectrum.read( Spec.value );
     else           spectrum.set( vertices , triangles , 200 , 100.f , false );
-    if( Verbose.set ) std::cout << "\tGot spectrum: " << timer.elapsed() << std::endl;
+    if( Verbose.set ) std::cout << "\tGot spectrum: " << timer.elapsed() << " (s)" <<  std::endl;
 
     // Compute + smooth HKS
     timer.reset();
     hks.resize( vertices.size() );
 #pragma omp parallel for
     for( int i=0 ; i<vertices.size() ; i++ ) hks[i] = spectrum.HKS( i , 0.1 );
-    if( Verbose.set ) std::cout << "\tGot HKS: " << timer.elapsed() << std::endl;
+    if( Verbose.set ) std::cout << "\tGot HKS: " << timer.elapsed() << " (s)" <<  std::endl;
 
     //WARN( "Why are we smoothing the HKS instead of using a larger time-step?" );
     timer.reset();
     tMesh.smoothVertexSignal( hks , 1.0e7 ); 
-    if( Verbose.set ) std::cout << "\tSmoothed HKS: " << timer.elapsed() << std::endl;
+    if( Verbose.set ) std::cout << "\tSmoothed HKS: " << timer.elapsed() << " (s)" <<  std::endl;
 
 
     // [WARNING] We are re-scaling the eigenvectors here
@@ -219,7 +219,7 @@ void run( void )
         tMesh.initGeodesicCalc();
     }
     tMesh.metricGradient( hks , triangleGradients );
-    if( Verbose.set ) std::cout << "\tGot HKS gradients: " << timer.elapsed() << std::endl;
+    if( Verbose.set ) std::cout << "\tGot HKS gradients: " << timer.elapsed() << " (s)" <<  std::endl;
 
     float rho = (float)( threshFactor.value * std::sqrt( tMesh.totalArea() / M_PI ) );
 
@@ -235,9 +235,13 @@ void run( void )
             else                                   geodesicEcho< float >( tMesh , triangleGradients, rand() % vertices.size() , rho , nRadialBins );
         }
 #ifdef DEBUG_DESCRIPTOR
-        if( Verbose.set ) std::cout << "\t\tAverage vertices in neighborhood: " << (double)verticesInNeighborhood / (-SourceNode.value) << std::endl;
+        if( Verbose.set )
+        {
+            std::cout << "\t\tAverage vertices in neighborhood: " << (double)verticesInNeighborhood / (-SourceNode.value) << std::endl;
+            std::cout << "\t\tTime per vertex: " << timer.elapsed() * 1000 / verticesInNeighborhood << " (ms)" << std::endl;
+        }
 #endif // DEBUG_DESCRIPTOR
-        if( Verbose.set ) std::cout << "\tGot " << (-SourceNode.value) << " ECHO descriptors: " << timer.elapsed() << std::endl;
+        if( Verbose.set ) std::cout << "\tGot " << (-SourceNode.value) << " ECHO descriptors: " << timer.elapsed() << " (s)" <<  std::endl;
     }
     else
     {
@@ -259,9 +263,13 @@ void run( void )
             else                                   F = geodesicEcho< float >( tMesh , triangleGradients , std::pair< int , Point3D< double > >( SourceFace.value , Point3D< double >( BC.values[0] , BC.values[1] , BC.values[2] ) ) , rho , nRadialBins );
         }
 #ifdef DEBUG_DESCRIPTOR
-        if( Verbose.set ) std::cout << "\t\tVertices in neighborhood: " << verticesInNeighborhood << std::endl;
+        if( Verbose.set )
+        {
+            std::cout << "\t\tVertices in neighborhood: " << verticesInNeighborhood << std::endl;
+            std::cout << "\t\tTime per vertex: " << timer.elapsed() * 1000 / verticesInNeighborhood << " (ms)" << std::endl;
+        }
 #endif // DEBUG_DESCRIPTOR
-        if( Verbose.set ) std::cout << "\tGot ECHO descriptor: " << timer.elapsed() << std::endl;
+        if( Verbose.set ) std::cout << "\tGot ECHO descriptor: " << timer.elapsed() << " (s)" <<  std::endl;
 
         if( DiskSupport.set ) F = ResampleSignalDisk( F , OutResolution.value , OutResolution.value );
         else                  F = ResampleSignal( F , OutResolution.value , OutResolution.value );
@@ -338,7 +346,7 @@ int main( int argc , char* argv[] )
 
     Miscellany::Timer timer;
     run< float >();
-    if( Verbose.set ) std::cout << "Got desriptor(s) in: " << timer.elapsed() << std::endl;
+    if( Verbose.set ) std::cout << "Got desriptor(s) in: " << timer.elapsed() << " (s)" <<  std::endl;
 
     return 1;
 }
