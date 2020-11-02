@@ -259,7 +259,7 @@ void run( void )
             else                                   F = geodesicEcho< float >( tMesh , triangleGradients , std::pair< int , Point3D< double > >( SourceFace.value , Point3D< double >( BC.values[0] , BC.values[1] , BC.values[2] ) ) , rho , nRadialBins );
         }
 #ifdef DEBUG_DESCRIPTOR
-        if( Verbose.set ) std::cout << "\t\Vertices in neighborhood: " << verticesInNeighborhood << std::endl;
+        if( Verbose.set ) std::cout << "\t\tVertices in neighborhood: " << verticesInNeighborhood << std::endl;
 #endif // DEBUG_DESCRIPTOR
         if( Verbose.set ) std::cout << "\tGot ECHO descriptor: " << timer.elapsed() << std::endl;
 
