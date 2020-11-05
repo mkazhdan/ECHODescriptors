@@ -76,109 +76,39 @@ If no file specified, the code will first compute the spectral decomposition (us
 </dt><dd> This string is the name of the file to which the computed ECHO descriptor will be written.<BR>
 If the extension of the filename is "<I>txt</I>" the descriptor will be written out in ASCII format. Otherwise, the descriptor will be written out as an image. (Currently, BMP, JPEG, PNG, and PBM formats are supported.)
 
+</dd><dt>[<b>--distance</b> &lt;<i>distance type</i>&gt;]
+</dt><dd> This integer specifies the type of distance used for computing the ECHO descriptor. Supported values are:
+<UL>
+<LI>0: geodesic
+<LI>1: biharmonic
+<LI>2: diffusion
+<LI>3: commute
+</UL>
+<BR>
+The default value for this parameter is 1 (i.e. biharmonic).
+
+</dd><dt>[<b>--diffusion</b> &lt;<i>diffusion time</i>&gt;]
+</dt><dd> If the diffusion distance is used as the distance, this floating point gives the diffusion time.<BR>
+The default value for this parameter is 0.1.
+
 </dd><dt>[<b>--tau</b> &lt;<i>radius scale</i>&gt;]
 </dt><dd> This floating point value defines the support radius for computing the ECHO descriptor. Specifically, string is the name of the file to which the the octree and solution coefficients are to be written. Specifically, the radius of support is defined as:
 <img src="https://latex.codecogs.com/svg.latex?\Large&space;\tau\cdot\sqrt{\frac{|M|}{\pi}}" title="\Large \tau\cdot\sqrt{\frac{|M|}{\pi}}" HEIGHT="36"> where <I>|M|</I> is the area of the mesh.<BR>
 The default value for this parameter is 0.08.
 
 </dd><dt>[<b>--hRadius</b> &lt;<i>histogram radius</i>&gt;]
-</dt><dd> This integers specifies the radius of the histogram used to discrtize the ECHO descriptor. (If the prescribed radius is <I>r</I> then the ECHO descriptor will be sampled on a (2<I>r</I>+1)x(2<I>r</I>+1) grid.<BR>
+</dt><dd> This integer specifies the radius of the histogram used to discrtize the ECHO descriptor. (If the prescribed radius is <I>r</I> then the ECHO descriptor will be sampled on a (2<I>r</I>+1)x(2<I>r</I>+1) grid.<BR>
 The default value for this parameter is 5.
 
-</dd><dt>[<b>--degree</b> &lt;<i>B-spline degree</i>&gt;]
-</dt><dd> This integer specifies the degree of the B-spline that is to be used to define the finite elements system.
-Larger degrees support higher order approximations, but come at the cost of denser system matrices (incurring a cost in both space and time).<br>
-The default value for this parameter is 2.
+</dd><dt>[<b>--resolution</b> &lt;<i>output resolution</i>&gt;]
+</dt><dd> This integer specifies the resolution to which the ECHO descriptor will be resampled prior to output.<BR>
+If no value is specfied, the resolution of the output will match the resolution of the histogram.
 
-</dd><dt>[<b>--depth</b> &lt;<i>reconstruction depth</i>&gt;]
-</dt><dd> This integer is the maximum depth of the tree that will be used for surface reconstruction.
-Running at depth <i>d</i> corresponds to solving on a grid whose resolution is no larger than
-2^<i>d</i> x 2^<i>d</i> x ... Note that since the reconstructor adapts the octree to the
-sampling density, the specified reconstruction depth is only an upper bound.<br>
-The default value for this parameter is 8.
+</dd><dt>[<b>--dev</b> &lt;<i>deviation for color mapping</i>&gt;]
+</dt><dd> If the ECHO descriptor is written out as an image. If the prescribed deviation <I>dev</I> is negative, an ECHO value of <I>v</I> is computed to the color whose HSV representation is (0,0,<I>v</I>/(3x&sigma;)), where &sigma; is the standard deviation of ECHO values over the descriptor. If the prescribed deviation deviation is positiven, the HSV representation is (4&pi;/3x>I>dev</I>/&sigma;,1,<I>v</I>/(3x&sigma;)).<BR>
+The default value for this parameter is -1.
 
-</dd><dt>[<b>--width</b> &lt;<i>finest cell width</i>&gt;]
-</dt><dd> This floating point value specifies the target width of the finest level octree cells.<br>
-This parameter is ignored if the <B>--depth</B> is also specified.
 
-</dd><dt>[<b>--scale</b> &lt;<i>scale factor</i>&gt;]
-</dt><dd> This floating point value specifies the ratio between the diameter of the cube used for reconstruction
-and the diameter of the samples' bounding cube.<br>
-The default value is 1.1.
-
-</dd><dt>[<b>--samplesPerNode</b> &lt;<i>minimum number of samples</i>&gt;]
-</dt><dd> This floating point value specifies the minimum number of sample points that should fall within an
-octree node as the octree construction is adapted to sampling density. For noise-free samples, small values
-in the range [1.0 - 5.0] can be used. For more noisy samples, larger values in the range [15.0 - 20.0] may
-be needed to provide a smoother, noise-reduced, reconstruction.<br>
-The default value is 1.0.
-
-</dd><dt>[<b>--valueWeight</b> &lt;<i>zero-crossing interpolation weight</i>&gt;]
-</dt><dd> This floating point value specifies the importance that interpolation of the point samples
-is given in the formulation of the screened Smoothed Signed Distance Reconstruction.<br>
-The default value for this parameter is 1.
-
-</dd><dt>[<b>--gradientWeight</b> &lt;<i>normal interpolation weight</i>&gt;]
-</dt><dd> This floating point value specifies the importance that interpolation of the points' normals
-is given in the formulation of the screened Smoothed Signed Distance Reconstruction.<br>
-The default value for this parameter is 1.
-
-</dd><dt>[<b>--biLapWeight</b> &lt;<i>bi-Laplacian weight weight</i>&gt;]
-</dt><dd> This floating point value specifies the importance that the bi-Laplacian regularization
-is given in the formulation of the screened Smoothed Signed Distance Reconstruction.<br>
-The default value for this parameter is 1.
-
-</dd><dt>[<b>--iters</b> &lt;<i>GS iters</i>&gt;]
-</dt><dd> This integer value specifies the number of Gauss-Seidel relaxations to be performed at each level of the hiearchy.<br>
-The default value for this parameter is 8.
-
-</dd><dt>[<b>--density</b>]
-</dt><dd> Enabling this flag tells the reconstructor to output the estimated depth values of the iso-surface vertices.
-
-</dd><dt>[<b>--normals</b>]
-</dt><dd> Enabling this flag tells the reconstructor to output vertex normals, computed from the gradients of the implicit function.
-
-</dd><dt>[<b>--colors</b>]
-</dt><dd> If the input points are in ASCII/binary format and contain color values, this flag lets the reconstruction code know that (1) each sample is represented by nine floating point values instead of the expected six, and that (2) color values should be output with the vertices of the reconstructed surface. (For input samples in the .ply format, the presence of color information, as well as any other additional per-sample data, is automatically determined from the file header.)
-
-</dd><dt>[<b>--data</b> &lt;<i>pull factor</i>&gt;]
-</dt><dd> If the input points have additional data (e.g. color) that is to be sampled at the output vertices, this floating point value specifies the relative importance
-of finer data over lower data in performing the extrapolation.<BR>
-The default value for this parameter is 32.
-
-</dd><dt>[<b>--confidence</b> &lt;<i>normal confidence exponent</i>&gt;]
-</dt><dd> This floating point value specifies the exponent to be applied to a point's confidence to adjust its weight. (A point's confidence is defined by the magnitude of its normal.)<BR>
-The default value for this parameter is 0.
-
-</dd><dt>[<b>--confidenceBias</b> &lt;<i>normal confidence bias exponent</i>&gt;]
-</dt><dd> This floating point value specifies the exponent to be applied to a point's confidence to bias the resolution at which the sample contributes to the linear system. (Points with lower confidence are biased to contribute at coarser resolutions.)<BR>
-The default value for this parameter is 0.
-
-</dd><dt>[<b>--primalGrid</b>]
-</dt><dd> Enabling this flag when outputing to a grid file has the reconstructor sample the implicit function at the corners of the grid, rather than the centers of the cells.
-
-</dd><dt>[<b>--nonLinearFit</b>]
-</dt><dd> Enabling this flag has the reconstructor use quadratic interpolation to estimate the positions of iso-vertices.
-
-</dd><dt>[<b>--polygonMesh</b>]
-</dt><dd> Enabling this flag tells the reconstructor to output a polygon mesh (rather than triangulating the results of Marching Cubes).
-
-</dd><dt>[<b>--tempDir</b> &lt;<i>temporary output directory</i>&gt;]
-</dt><dd> This string is the name of the directory to which temporary files will be written.
-
-</dd><dt>[<b>--threads</b> &lt;<i>number of processing threads</i>&gt;]
-</dt><dd> This integer specifies the number of threads across which the algorithm should be parallelized.<br>
-The default value for this parameter is equal to the numer of (virtual) processors on the executing  machine.
-
-</dd><dt>[<b>--maxMemory</b> &lt;<i>maximum memory usage (in GB)</i>&gt;]
-</dt><dd> If positive, this integer value specifies the peak memory utilization for running the reconstruction code (forcing the execution to terminate if the limit is exceeded).
-
-</dd><dt>[<b>--performance</b>]
-</dt><dd> Enabling this flag provides running time and peak memory usage at the end of the execution.
-
-</dd><dt>[<b>--verbose</b>]
-</dt><dd> Enabling this flag provides a more verbose description of the running times and memory usages of
-individual components of the surface reconstructor.
 
 </dd>
 </DETAILS>
