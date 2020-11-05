@@ -97,7 +97,7 @@ The default value for this parameter is 0.1.
 The default value for this parameter is 0.08.
 
 </dd><dt>[<b>--hRadius</b> &lt;<i>histogram radius</i>&gt;]
-</dt><dd> This integer specifies the radius of the histogram used to discrtize the ECHO descriptor. (If the prescribed radius is <I>r</I> then the ECHO descriptor will be sampled on a (2<I>r</I>+1)x(2<I>r</I>+1) grid.<BR>
+</dt><dd> This integer specifies the radius of the histogram used to discrtize the ECHO descriptor. (If the prescribed radius is <I>r</I> then the ECHO descriptor will be sampled on a (2<I>r</I>+1)&times;(2<I>r</I>+1) grid.<BR>
 The default value for this parameter is 5.
 
 </dd><dt>[<b>--resolution</b> &lt;<i>output resolution</i>&gt;]
@@ -105,7 +105,7 @@ The default value for this parameter is 5.
 If no value is specfied, the resolution of the output will match the resolution of the histogram.
 
 </dd><dt>[<b>--dev</b> &lt;<i>deviation for color mapping</i>&gt;]
-</dt><dd> If the ECHO descriptor is written out as an image. If the prescribed deviation <I>dev</I> is negative, an ECHO value of <I>v</I> is computed to the color whose HSV representation is (0,0,<I>v</I>/(3x&sigma;)), where &sigma; is the standard deviation of ECHO values over the descriptor. If the prescribed deviation deviation is positiven, the HSV representation is (4&pi;/3x<I>dev</I>/&sigma;,1,<I>v</I>/(3x&sigma;)).<BR>
+</dt><dd> If the ECHO descriptor is written out as an image. If the prescribed deviation <I>dev</I> is negative, an ECHO value of <I>v</I> is computed to the color whose HSV representation is (0,0,<I>v</I>/(3x&sigma;)), where &sigma; is the standard deviation of ECHO values over the descriptor. If the prescribed deviation deviation is positiven, the HSV representation is (4&pi;/3&times;<I>dev</I>/&sigma;,1,<I>v</I>/(3&times;&sigma;)).<BR>
 The default value for this parameter is -1.
 
 
