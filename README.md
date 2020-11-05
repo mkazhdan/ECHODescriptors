@@ -78,7 +78,7 @@ If the extension of the filename is "<I>txt</I>" the descriptor will be written 
 
 </dd><dt>[<b>--tau</b> &lt;<i>radius scale</i>&gt;]
 </dt><dd> This floating point value defines the support radius for computing the ECHO descriptor. Specifically, string is the name of the file to which the the octree and solution coefficients are to be written. Specifically, the radius of support is defined as:
-<img src="https://latex.codecogs.com/svg.latex?\Large&space;r=\tau\cdot\sqrt{\frac{|M|}{\pi}}" title="\Large r=\tau\cdot\sqrt{\frac{|M|}{\pi}}" />
+<img src="https://latex.codecogs.com/svg.latex?\Large&space;r=\tau\cdot\sqrt{\frac{|M|}{\pi}}" title="\Large r=\tau\cdot\sqrt{\frac{|M|}{\pi}}" HEIGHT="12"> where <I>|M|</I> is the area of the mesh.
 
 </dd><dt>[<b>--grid</b> &lt;<i>output grid</i>&gt;]
 </dt><dd> This string is the name of the file to which the sampled implicit function will be written.
