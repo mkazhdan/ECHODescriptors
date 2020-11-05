@@ -72,19 +72,18 @@ If the prescribed value is negative, the code will compute descriptors at -(<i>v
 </dt><dd> This string is the name of the file from which the spectral decomposition of the triangle mesh will be read.<BR>
 If no file specified, the code will first compute the spectral decomposition (using the lowest 200 eigenvector/eigenvalue pairs) and use that for processing.
 
-</dd><dt>[<b>--v</b> &lt;<i>output ECHO descriptor</i>&gt;]
+</dd><dt>[<b>--out</b> &lt;<i>output ECHO descriptor</i>&gt;]
 </dt><dd> This string is the name of the file to which the computed ECHO descriptor will be written.<BR>
 If the extension of the filename is "<I>txt</I>" the descriptor will be written out in ASCII format. Otherwise, the descriptor will be written out as an image. (Currently, BMP, JPEG, PNG, and PBM formats are supported.)
 
 </dd><dt>[<b>--tau</b> &lt;<i>radius scale</i>&gt;]
 </dt><dd> This floating point value defines the support radius for computing the ECHO descriptor. Specifically, string is the name of the file to which the the octree and solution coefficients are to be written. Specifically, the radius of support is defined as:
-<img src="https://latex.codecogs.com/svg.latex?\Large&space;\tau\cdot\sqrt{\frac{|M|}{\pi}}" title="\Large \tau\cdot\sqrt{\frac{|M|}{\pi}}" HEIGHT="36"> where <I>|M|</I> is the area of the mesh.
+<img src="https://latex.codecogs.com/svg.latex?\Large&space;\tau\cdot\sqrt{\frac{|M|}{\pi}}" title="\Large \tau\cdot\sqrt{\frac{|M|}{\pi}}" HEIGHT="36"> where <I>|M|</I> is the area of the mesh.<BR>
+The default value for this parameter is 0.08.
 
-</dd><dt>[<b>--grid</b> &lt;<i>output grid</i>&gt;]
-</dt><dd> This string is the name of the file to which the sampled implicit function will be written.
-The file is wrtten out in binary, with the first 4 bytes corresponding to the (integer) sampling resolution, 2^<i>d</i>,
-and the next 4 x 2^<i>d</i> x 2^<i>d</i> x ... bytes corresponding to the (single precision) floating point values
-of the implicit function.
+</dd><dt>[<b>--hRadius</b> &lt;<i>histogram radius</i>&gt;]
+</dt><dd> This integers specifies the radius of the histogram used to discrtize the ECHO descriptor. (If the prescribed radius is <I>r</I> then the ECHO descriptor will be sampled on a (2<I>r</I>+1)x(2<I>r</I>+1) grid.<BR>
+The default value for this parameter is 5.
 
 </dd><dt>[<b>--degree</b> &lt;<i>B-spline degree</i>&gt;]
 </dt><dd> This integer specifies the degree of the B-spline that is to be used to define the finite elements system.
