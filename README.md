@@ -30,7 +30,7 @@ Computes the spectrum of the Laplace-Beltrami operator by solving the associated
 </SUMMARY>
 <dt><b>--in</b> &lt;<i>input triangle mesh</i>&gt;
 </dt><dd> This string is the name of the file from which the triangle mesh will be read.<br>
-The file is assumed to be in <a href="http://www.cc.gatech.edu/projects/large_models/ply.html">PLY</a> format<br> 
+The file is assumed to be in <a href="http://www.cc.gatech.edu/projects/large_models/ply.html">PLY</a> format.
 </dd>
 
 </dd><dt>[<b>--out</b> &lt;<i>output spectrum file</i>&gt;]
@@ -44,95 +44,8 @@ The default value for this parameter is 200.
 </dt><dd> This floating point value specifies the offset to be used in the invert-and-shift implementation computing the lower-frequency part of the spectrum.<br>
 The default value for this parameter is 100.
 
-
-</dd><dt>[<b>--bType</b> &lt;<i>boundary type</i>&gt;]
-</dt><dd> This integer specifies the boundary type for the finite elements. Valid values are:
-<ul>
-<li> <b>1</b>: Free boundary constraints
-</li><li> <b>2</b>: Dirichlet boundary constraints
-</li><li> <b>3</b>: Neumann boundary constraints
-</li></ul>
-The default value for this parameter is 3 (Neumann).
-
-</dd><dt>[<b>--depth</b> &lt;<i>reconstruction depth</i>&gt;]
-</dt><dd> This integer is the maximum depth of the tree that will be used for surface reconstruction.
-Running at depth <i>d</i> corresponds to solving on a grid whose resolution is no larger than
-2^<i>d</i> x 2^<i>d</i> x ... Note that since the reconstructor adapts the octree to the
-sampling density, the specified reconstruction depth is only an upper bound.<br>
-The default value for this parameter is 8.
-
-</dd><dt>[<b>--width</b> &lt;<i>finest cell width</i>&gt;]
-</dt><dd> This floating point value specifies the target width of the finest level octree cells.<br>
-This parameter is ignored if the <B>--depth</B> is also specified.
-
-</dd><dt>[<b>--scale</b> &lt;<i>scale factor</i>&gt;]
-</dt><dd> This floating point value specifies the ratio between the diameter of the cube used for reconstruction
-and the diameter of the samples' bounding cube.<br>
-The default value is 1.1.
-
-</dd><dt>[<b>--samplesPerNode</b> &lt;<i>minimum number of samples</i>&gt;]
-</dt><dd> This floating point value specifies the minimum number of sample points that should fall within an
-octree node as the octree construction is adapted to sampling density. For noise-free samples, small values
-in the range [1.0 - 5.0] can be used. For more noisy samples, larger values in the range [15.0 - 20.0] may
-be needed to provide a smoother, noise-reduced, reconstruction.<br>
-The default value is 1.0.
-
-</dd><dt>[<b>--pointWeight</b> &lt;<i>interpolation weight</i>&gt;]
-</dt><dd> This floating point value specifies the importance that interpolation of the point samples
-is given in the formulation of the screened Poisson equation.<br>
-The results of the original (unscreened) Poisson Reconstruction can be obtained by setting this value to 0.<br>
-The default value for this parameter is twice the B-spline degree.
-
-</dd><dt>[<b>--iters</b> &lt;<i>Gauss-Seidel iterations per level</i>&gt;]
-</dt><dd> This integer value specifies the number of Gauss-Seidel relaxations to be performed at each level of the octree hierarchy.<br>
-The default value for this parameter is 8.
-
-</dd><dt>[<b>--density</b>]
-</dt><dd> Enabling this flag tells the reconstructor to output the estimated depth values of the iso-surface vertices.
-
-</dd><dt>[<b>--normals</b>]
-</dt><dd> Enabling this flag tells the reconstructor to output vertex normals, computed from the gradients of the implicit function.
-
-</dd><dt>[<b>--colors</b>]
-</dt><dd> If the input points are in ASCII/binary format and contain color values, this flag lets the reconstruction code know that (1) each sample is represented by nine floating point values instead of the expected six, and that (2) color values should be output with the vertices of the reconstructed surface. (For input samples in the .ply format, the presence of color information, as well as any other additional per-sample data, is automatically determined from the file header.)
-
-</dd><dt>[<b>--data</b> &lt;<i>pull factor</i>&gt;]
-</dt><dd> If the input points have additional data (e.g. color) that is to be sampled at the output vertices, this floating point value specifies the relative importance
-of finer data over lower data in performing the extrapolation.<BR>
-The default value for this parameter is 32.
-
-</dd><dt>[<b>--confidence</b> &lt;<i>normal confidence exponent</i>&gt;]
-</dt><dd> This floating point value specifies the exponent to be applied to a point's confidence to adjust its weight. (A point's confidence is defined by the magnitude of its normal.)<BR>
-The default value for this parameter is 0.
-
-</dd><dt>[<b>--confidenceBias</b> &lt;<i>normal confidence bias exponent</i>&gt;]
-</dt><dd> This floating point value specifies the exponent to be applied to a point's confidence to bias the resolution at which the sample contributes to the linear system. (Points with lower confidence are biased to contribute at coarser resolutions.)<BR>
-The default value for this parameter is 0.
-
-</dd><dt>[<b>--primalGrid</b>]
-</dt><dd> Enabling this flag when outputing to a grid file has the reconstructor sample the implicit function at the corners of the grid, rather than the centers of the cells.
-
-</dd><dt>[<b>--linearFit</b>]
-</dt><dd> Enabling this flag has the reconstructor use linear interpolation to estimate the positions of iso-vertices.
-
-</dd><dt>[<b>--polygonMesh</b>]
-</dt><dd> Enabling this flag tells the reconstructor to output a polygon mesh (rather than triangulating the results of Marching Cubes).
-
-</dd><dt>[<b>--tempDir</b> &lt;<i>temporary output directory</i>&gt;]
-</dt><dd> This string is the name of the directory to which temporary files will be written.
-
-</dd><dt>[<b>--threads</b> &lt;<i>number of processing threads</i>&gt;]
-</dt><dd> This integer specifies the number of threads across which the algorithm should be parallelized.<br>
-The default value for this parameter is equal to the numer of (virtual) processors on the executing  machine.
-
-</dd><dt>[<b>--maxMemory</b> &lt;<i>maximum memory usage (in GB)</i>&gt;]
-</dt><dd> If positive, this integer value specifies the peak memory utilization for running the reconstruction code (forcing the execution to terminate if the limit is exceeded).
-
-</dd><dt>[<b>--performance</b>]
-</dt><dd> Enabling this flag provides running time and peak memory usage at the end of the execution.
-
 </dd><dt>[<b>--verbose</b>]
-</dt><dd> Enabling this flag provides a more verbose description of the running times and memory usages of individual components of the surface reconstructor.
+</dt><dd> Enabling this flag provides a more verbose gives the running time for computing the spectrum.
 
 </dd>
 </DETAILS>
@@ -144,29 +57,28 @@ The default value for this parameter is equal to the numer of (virtual) processo
 <dl>
 <DETAILS>
 <SUMMARY>
-<font size="+1"><b>SSDRecon</b></font>:
-Reconstructs a surface mesh from a set of oriented 3D points by solving for a Smooth Signed Distance function (solving a 3D bi-Laplacian system with positional value and gradient constraints) <a href="http://mesh.brown.edu/ssd/paper.html">[Calakli and Taubin, 2011]</a>
+<font size="+1"><b>GetDescriptor</b></font>:
+Computes the ECHO descriptor at the prescribed vertex.
 </SUMMARY>
-<dt><b>--in</b> &lt;<i>input points</i>&gt;
-</dt><dd> This string is the name of the file from which the point set will be read.<br>
-If the file extension is <i>.ply</i>, the file should be in
-<a href="http://www.cc.gatech.edu/projects/large_models/ply.html">PLY</a> format, giving the list of oriented
-vertices with the x-, y-, and z-coordinates of the positions encoded by the properties <i>x</i>, <i>y</i>, and
-<i>z</i> and the x-, y-, and z-coordinates of the normals encoded by the properties <i>nx</i>, <i>ny</i>, and
-<i>nz</i> .<br>
-If the file extension is <i>.bnpts</i>, the file should be a binary file, consisting of blocks of 6 32-bit
-floats: x-, y-, and z-coordinates of the point's position, followed by the x-, y-, and z-coordinates
-of the point's normal. (No information about the number of oriented point samples should be specified.)<br>
-Otherwise, the file should be an ascii file with groups of 6,
-white space delimited, numbers: x-, y-, and z-coordinates of the point's position, followed
-by the x-, y- and z-coordinates of the point's normal. (No information about the number of oriented point samples should be specified.)<br> 
+<dt><b>--in</b> &lt;<i>input triangle mesh</i>&gt;
+</dt><dd> This string is the name of the file from which the triangle mesh will be read.<br>
+The file is assumed to be in <a href="http://www.cc.gatech.edu/projects/large_models/ply.html">PLY</a> format.
 
-</dd><dt>[<b>--out</b> &lt;<i>output triangle mesh</i>&gt;]
-</dt><dd> This string is the name of the file to which the triangle mesh will be written. 
-The file is written in <a href="http://www.cc.gatech.edu/projects/large_models/ply.html">PLY</a> format.
+</dd><dt><b>--vertex</b> &lt;<i>vertex index</i>&gt;]
+</dt><dd> This integer specifies the index of the vertex at which the ECHO descriptor should be computed.<BR>
+If the prescribed value is negative, the code will compute descriptors at -(<i>vertex index</i>) random locations and will not write out the results.
 
-</dd><dt>[<b>--tree</b> &lt;<i>output octree and coefficients</i>&gt;]
-</dt><dd> This string is the name of the file to which the the octree and solution coefficients are to be written.
+</dd><dt>[<b>--spec</b> &lt;<i>spectral decomposition file</i>&gt;]
+</dt><dd> This string is the name of the file from which the spectral decomposition of the triangle mesh will be read.<BR>
+If no file specified, the code will first compute the spectral decomposition (using the lowest 200 eigenvector/eigenvalue pairs) and use that for processing.
+
+</dd><dt>[<b>--v</b> &lt;<i>output ECHO descriptor</i>&gt;]
+</dt><dd> This string is the name of the file to which the computed ECHO descriptor will be written.<BR>
+If the extension of the filename is "<I>txt</I>" the descriptor will be written out in ASCII format. Otherwise, the descriptor will be written out as an image. (Currently, BMP, JPEG, PNG, and PBM formats are supported.)
+
+</dd><dt>[<b>--tau</b> &lt;<i>radius scale</i>&gt;]
+</dt><dd> This floating point value defines the support radius for computing the ECHO descriptor. Specifically, string is the name of the file to which the the octree and solution coefficients are to be written. Specifically, the radius of support is defined as:
+![\Large r=\tau\cdot{\sqrt\frac{|M|}{\pi}}](https://latex.codecogs.com/svg.latex?\Large&space;r=\tau\cdot\sqrt{\frac{|M|}{\pi}}) 
 
 </dd><dt>[<b>--grid</b> &lt;<i>output grid</i>&gt;]
 </dt><dd> This string is the name of the file to which the sampled implicit function will be written.
