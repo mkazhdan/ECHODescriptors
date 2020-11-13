@@ -38,16 +38,18 @@ DAMAGE.
 #include <Misha/Miscellany.h>
 #include <Misha/PlyVertexData.h>
 #include <Misha/Miscellany.h>
+#include <Misha/Polynomial.h>
 
-#define DEBUG_DESCRIPTOR
+#undef DEBUG_DESCRIPTOR
 #include "GetDescriptor.inl"
 
 
+
 Misha::CmdLineParameter< std::string > In( "in" ) , Spec( "spec" ) , Out( "out" ); 
-Misha::CmdLineParameter< int > SourceNode( "vertex" ) , RadialBins( "rBins" , 5 ) , OutResolution( "resolution" ) , SourceFace( "tri") , DistanceType( "distance" , DISTANCE_BIHARMONIC );
-Misha::CmdLineParameter< float > threshFactor( "tau" , 0.08f ) , Deviation( "dev" , -1. ) , DiffusionTime( "diffusion" , 0.1f );
+Misha::CmdLineParameter< int > SourceNode( "vertex" ) , HistogramRadius( "hRadius" , 5 ) , OutResolution( "resolution" ) , SourceFace( "tri") , DistanceType( "distance" , DISTANCE_BIHARMONIC );
+Misha::CmdLineParameter< float > ThreshFactor( "tau" , 0.08f ) , Deviation( "dev" , -1. ) , DiffusionTime( "diffusion" , 0.1f );
 Misha::CmdLineParameterArray< float , 3 > BC( "bc" );
-Misha::CmdLineReadable  Verbose( "verbose" ) , DiskSupport( "disk" );
+Misha::CmdLineReadable  Verbose( "verbose" ) , NoDiskSupport( "noDisk" ) , ExactGaussian( "exactG" );
 
 Misha::CmdLineReadable* params[] =
 {
@@ -55,16 +57,17 @@ Misha::CmdLineReadable* params[] =
     &Spec ,
     &Out ,
     &SourceNode ,
-    &RadialBins ,
-    &threshFactor ,
+    &HistogramRadius ,
+    &ThreshFactor ,
     &Verbose ,
     &Deviation ,
     &OutResolution ,
-    &DiskSupport ,
+    &NoDiskSupport ,
     &SourceFace ,
     &BC ,
     &DistanceType ,
     &DiffusionTime ,
+    &ExactGaussian ,
     NULL
 };
 
@@ -77,15 +80,16 @@ void ShowUsage( const char* ex )
     printf( "\t --%s <barycentric coordinate 1> <barycentric coordinate 2> <barycentric coordinate 3>\n" , BC.name.c_str() );
     printf( "\t[--%s <spectral decomposition>]\n" , Spec.name.c_str() );
     printf( "\t[--%s <output ECHO descriptor>]\n" , Out.name.c_str() );
-    printf( "\t[--%s <Mesh area to support radius scale>=%.2f]\n" , threshFactor.name.c_str() , threshFactor.value );
-    printf( "\t[--%s <histogram radius (in bin units)>=%d, size of histogram will be (2 * n + 1)^2]\n" , RadialBins.name.c_str() , RadialBins.value );
-    printf( "\t[--%s <target deviation (for color output)>=%f]\n" , Deviation.name.c_str() , Deviation.value );
-    printf( "\t[--%s <resampled output resolution>=<histogram radius>*2+1]\n" , OutResolution.name.c_str() );
     printf( "\t[--%s <distance type>=%d]\n" , DistanceType.name.c_str() , DistanceType.value );
     for( int i=0 ; i<DISTANCE_COUNT ; i++ ) printf( "\t\t%d] %s\n" , i , DistanceNames[i].c_str() );
     printf( "\t[--%s <diffusion time>=%f]\n" , DiffusionTime.name.c_str() , DiffusionTime.value );
+    printf( "\t[--%s <mesh area to support radius scale>=%.2f]\n" , ThreshFactor.name.c_str() , ThreshFactor.value );
+    printf( "\t[--%s <histogram radius (in bin units)>=%d, size of histogram will be (2 * n + 1)^2]\n" , HistogramRadius.name.c_str() , HistogramRadius.value );
+    printf( "\t[--%s <target deviation (for color output)>=%f]\n" , Deviation.name.c_str() , Deviation.value );
+    printf( "\t[--%s <resampled output resolution>=<histogram radius>*2+1]\n" , OutResolution.name.c_str() );
+    printf( "\t[--%s]\n" , NoDiskSupport.name.c_str() );
+    printf( "\t[--%s]\n" , ExactGaussian.name.c_str() );
     printf( "\t[--%s]\n" , Verbose.name.c_str() );
-    printf( "\t[--%s]\n" , DiskSupport.name.c_str() );
 }
 
 template< typename Real > using PlyVertexFactory = VertexFactory::Factory< Real , VertexFactory::PositionFactory< Real , 3 > >;
@@ -136,20 +140,99 @@ RegularGrid< float , 2 > ResampleSignalDisk( const RegularGrid< float , 2 > &in 
     }
     return out;
 }
+
+template< unsigned int Derivatives >
+Polynomial< 1 , 2*Derivatives+1 > FitDerivativeValuesToPolynomial( double startX , double endX , double startDerivatives[] , double endDerivatives[] )
+{
+    Polynomial< 1 , 2*Derivatives+1 > monomials[2*Derivatives+2];
+    for( int i=0 ; i<=2*Derivatives+1 ; i++ ) monomials[i][i] = 1;
+    // P(x) = a_0 + a_1 x + ... a_{2d+1} x^{2d+1}
+    SquareMatrix< double , 2*Derivatives+2 > A;
+    Point< double , 2*Derivatives+2 > b , x;
+    for( int d=0 ; d<=Derivatives ; d++ )
+    {
+        for( int j=0 ; j<2*Derivatives+2 ; j++ )
+        {
+            A(j,2*d+0) = monomials[j]( startX );
+            A(j,2*d+1) = monomials[j](   endX );
+            monomials[j] = monomials[j].d();
+        }
+        b[2*d+0] = startDerivatives[d];
+        b[2*d+1] =   endDerivatives[d];
+    }
+    x = A.inverse() * b;
+    Polynomial< 1 , 2*Derivatives+1 > P;
+    for( int i=0 ; i<2*Derivatives+2 ; i++ ) P[i] = x[i];
+    return P;
+}
+
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // MAIN
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 template< class Real >
 void run( void )
 {
+    static const int NSamples = 7;
     Miscellany::Timer timer;
     std::vector< double > signalValues;
-    std::vector< Point2D< double > > triangleGradients;
+    std::vector< double > signal;
+    std::vector< std::pair< Point2D< double > , Point2D< double > > > dualFrameField;
     std::vector< double > hks;
     Spectrum< double > spectrum;
     std::function< double ( double ) > spectralFunction = SpectralFunction( DistanceType.value , DiffusionTime.value );
+    std::function< double ( double ) > weightFunction;
 
-    int nRadialBins = RadialBins.value;
+    int nRadialBins = HistogramRadius.value;
+
+    //==The Weight function==
+    static const int Derivatives = 1;
+    if( ExactGaussian.set ) weightFunction = []( double d2 ){ return exp( -d2 ); };
+    else
+    {
+        Polynomial< 1 , 2*Derivatives+1 > P[2];
+        static const double SupportRadius = 3.;
+        static const double MidPoint = SupportRadius / 2.;
+        {
+            double startX = 0 , endX = MidPoint;
+            double startValues[ Derivatives+1 ] , endValues[ Derivatives+1 ];
+            for( int d=0 ; d<=Derivatives ; d++ )
+            {
+                startValues[d] = (d&1) ? -exp(-startX) : exp(-startX);
+                endValues[d] = (d&1) ? -exp(-endX) : exp(-endX);
+            }
+            P[0] = FitDerivativeValuesToPolynomial< Derivatives >( startX , endX , startValues , endValues );
+        }
+        {
+            double startX = MidPoint , endX = SupportRadius;
+            double startValues[ Derivatives+1 ] , endValues[ Derivatives+1 ];
+            for( int d=0 ; d<=Derivatives ; d++ )
+            {
+                startValues[d] = (d&1) ? -exp(-startX) : exp(-startX);
+                endValues[d] = (d&1) ? -exp(-endX) : exp(-endX);
+            }
+            P[1] = FitDerivativeValuesToPolynomial< Derivatives >( startX , endX , startValues , endValues );
+        }
+        weightFunction = [=]( double x )
+        {
+            if     ( x<MidPoint ) return P[0](x);
+            else if( x<SupportRadius ) return P[1](x);
+            else return 0.;
+        };
+    }
+#ifdef DEBUG_DESCRIPTOR
+    {
+        double e=0;
+        static const int COUNT = 10000;
+        for( int i=0 ; i<10000 ; i++ )
+        {
+            double x = (i+0.5)/COUNT * SupportRadius;
+            double d = exp( -x ) - weightFunction( x );
+            e += d*d;
+        }
+        std::cout << "Error: " << e/COUNT << std::endl;
+    }
+#endif // DEBUG_DESCRIPTOR
+
 
     //==Load Mesh===
     std::vector< TriangleIndex > triangles;
@@ -164,26 +247,25 @@ void run( void )
         for( int i=0 ; i<_vertices.size() ; i++ ) vertices[i] = Point3D< float >( _vertices[i].get<0>() );
     }
     TriMesh< float > tMesh( vertices , triangles );
-    if( Verbose.set ) std::cout << "\tGot mesh: " << timer.elapsed() << " (s)" << std::endl;
+    if( Verbose.set ) std::cout << "\tGot mesh: " << timer.elapsed() << "(s)" << std::endl;
 
     //==Load Spectral Decomposition==
     timer.reset();
     if( Spec.set ) spectrum.read( Spec.value );
     else           spectrum.set( vertices , triangles , 200 , 100.f , false );
-    if( Verbose.set ) std::cout << "\tGot spectrum: " << timer.elapsed() << " (s)" <<  std::endl;
+    if( Verbose.set ) std::cout << "\tGot spectrum: " << timer.elapsed() << "(s)" << std::endl;
 
     // Compute + smooth HKS
     timer.reset();
     hks.resize( vertices.size() );
 #pragma omp parallel for
     for( int i=0 ; i<vertices.size() ; i++ ) hks[i] = spectrum.HKS( i , 0.1 );
-    if( Verbose.set ) std::cout << "\tGot HKS: " << timer.elapsed() << " (s)" <<  std::endl;
+    if( Verbose.set ) std::cout << "\tGot HKS: " << timer.elapsed() << "(s)" <<  std::endl;
 
     //WARN( "Why are we smoothing the HKS instead of using a larger time-step?" );
     timer.reset();
     tMesh.smoothVertexSignal( hks , 1.0e7 ); 
-    if( Verbose.set ) std::cout << "\tSmoothed HKS: " << timer.elapsed() << " (s)" <<  std::endl;
-
+    if( Verbose.set ) std::cout << "\tSmoothed HKS: " << timer.elapsed() << "(s)" <<  std::endl;
 
     // [WARNING] We are re-scaling the eigenvectors here
     if( IsSpectral( DistanceType.value ) )
@@ -201,7 +283,7 @@ void run( void )
         auto squareEdgeLengthFunctor = [&]( TriangleIndex tri )
         {
             Point3D< double > d;
-            for( int i=0 ; i<3 ; i++ ) d[i] = spectrum.spectralDistance( tri[(i+1)%3] , tri[(i+2)%3] , 1 , spectrum.size() );
+            for( int i=0 ; i<3 ; i++ ) d[i] = spectrum.spectralDistance( tri[(i+1)%3] , tri[(i+2)%3] , 1 , (int)spectrum.size() );
             for( int i=0 ; i<3 ; i++ ) d[i] *= d[i];
             return d;
         };
@@ -218,10 +300,29 @@ void run( void )
         tMesh.initMetricsFromSquareEdgeLengths( squareEdgeLengthFunctor );
         tMesh.initGeodesicCalc();
     }
-    tMesh.metricGradient( hks , triangleGradients );
-    if( Verbose.set ) std::cout << "\tGot HKS gradients: " << timer.elapsed() << " (s)" <<  std::endl;
+    if( Verbose.set ) std::cout << "\tSet triangle metrics: " << timer.elapsed() << "(s)" <<  std::endl;
 
-    float rho = (float)( threshFactor.value * std::sqrt( tMesh.totalArea() / M_PI ) );
+    // Compute the frame field and the signal
+    timer.reset();
+    signal.resize( triangles.size() );
+    dualFrameField.resize( triangles.size() );
+    {
+        std::vector< Point2D< double > > triangleGradients;
+        tMesh.metricGradient( hks , triangleGradients );
+#pragma omp parallel for
+        for( int l=0 ; l<triangles.size(); l++)
+        {
+            SquareMatrix< double , 2 > m = tMesh.triangleMetric( l );
+            signal[l] = std::sqrt( Point2D< double >::Dot( triangleGradients[l] , m * triangleGradients[l] ) );
+            dualFrameField[l].first  = triangleGradients[l] / signal[l];
+            dualFrameField[l].second = tMesh.metricRotate90( l , dualFrameField[l].first );
+            dualFrameField[l].first = m * dualFrameField[l].first;
+            dualFrameField[l].second = m * dualFrameField[l].second;
+        }
+    }
+    if( Verbose.set ) std::cout <<"\tGot frame field and signal: " << timer.elapsed() << "(s)" << std::endl;
+
+    float rho = (float)( ThreshFactor.value * std::sqrt( tMesh.totalArea() / M_PI ) );
 
     if( SourceNode.set && SourceNode.value<0 )
     {
@@ -231,17 +332,21 @@ void run( void )
 #endif // DEBUG_DESCRIPTOR
         for( int i=0 ; i<-SourceNode.value ; i++ )
         {
-            if( IsSpectral( DistanceType.value ) ) spectralEcho< float >( tMesh , spectrum , triangleGradients, rand() % vertices.size() , rho , nRadialBins );
-            else                                   geodesicEcho< float >( tMesh , triangleGradients, rand() % vertices.size() , rho , nRadialBins );
+            if( IsSpectral( DistanceType.value ) ) spectralEcho< float , NSamples >( tMesh , spectrum , signal , dualFrameField , rand() % vertices.size() , rho , nRadialBins , weightFunction );
+            else                                   geodesicEcho< float , NSamples >( tMesh , signal , dualFrameField, rand() % vertices.size() , rho , nRadialBins , weightFunction );
         }
 #ifdef DEBUG_DESCRIPTOR
         if( Verbose.set )
         {
             std::cout << "\t\tAverage vertices in neighborhood: " << (double)verticesInNeighborhood / (-SourceNode.value) << std::endl;
-            std::cout << "\t\tTime per vertex: " << timer.elapsed() * 1000 / verticesInNeighborhood << " (ms)" << std::endl;
+            std::cout << "\t\tTime per vertex: " << timer.elapsed() * 1000 / verticesInNeighborhood << "(ms)" << std::endl;
         }
 #endif // DEBUG_DESCRIPTOR
-        if( Verbose.set ) std::cout << "\tGot " << (-SourceNode.value) << " ECHO descriptors: " << timer.elapsed() << " (s)" <<  std::endl;
+        if( Verbose.set )
+        {
+            double e = timer.elapsed();
+            std::cout << "\tGot ECHO descriptors: " << e << "(s) / " << (-SourceNode.value) << " = " << ( e / -SourceNode.value ) << "(s)" <<  std::endl;
+        }
     }
     else
     {
@@ -254,25 +359,25 @@ void run( void )
 #endif // DEBUG_DESCRIPTOR
         if( SourceNode.set )
         {
-            if( IsSpectral( DistanceType.value ) ) F = spectralEcho< float >( tMesh , spectrum , triangleGradients, SourceNode.value , rho , nRadialBins );
-            else                                   F = geodesicEcho< float >( tMesh , triangleGradients, SourceNode.value , rho , nRadialBins );
+            if( IsSpectral( DistanceType.value ) ) F = spectralEcho< float , NSamples >( tMesh , spectrum , signal , dualFrameField , SourceNode.value , rho , nRadialBins , weightFunction );
+            else                                   F = geodesicEcho< float , NSamples >( tMesh , signal , dualFrameField , SourceNode.value , rho , nRadialBins , weightFunction );
         }
         else
         {
-            if( IsSpectral( DistanceType.value ) ) F = spectralEcho< float >( tMesh , spectrum , triangleGradients , std::pair< int , Point3D< double > >( SourceFace.value , Point3D< double >( BC.values[0] , BC.values[1] , BC.values[2] ) ) , rho , nRadialBins );
-            else                                   F = geodesicEcho< float >( tMesh , triangleGradients , std::pair< int , Point3D< double > >( SourceFace.value , Point3D< double >( BC.values[0] , BC.values[1] , BC.values[2] ) ) , rho , nRadialBins );
+            if( IsSpectral( DistanceType.value ) ) F = spectralEcho< float , NSamples >( tMesh , spectrum , signal , dualFrameField , std::pair< int , Point3D< double > >( SourceFace.value , Point3D< double >( BC.values[0] , BC.values[1] , BC.values[2] ) ) , rho , nRadialBins , weightFunction );
+            else                                   F = geodesicEcho< float , NSamples >( tMesh , signal , dualFrameField , std::pair< int , Point3D< double > >( SourceFace.value , Point3D< double >( BC.values[0] , BC.values[1] , BC.values[2] ) ) , rho , nRadialBins , weightFunction );
         }
 #ifdef DEBUG_DESCRIPTOR
         if( Verbose.set )
         {
             std::cout << "\t\tVertices in neighborhood: " << verticesInNeighborhood << std::endl;
-            std::cout << "\t\tTime per vertex: " << timer.elapsed() * 1000 / verticesInNeighborhood << " (ms)" << std::endl;
+            std::cout << "\t\tTime per vertex: " << timer.elapsed() * 1000 / verticesInNeighborhood << "(ms)" << std::endl;
         }
 #endif // DEBUG_DESCRIPTOR
-        if( Verbose.set ) std::cout << "\tGot ECHO descriptor: " << timer.elapsed() << " (s)" <<  std::endl;
+        if( Verbose.set ) std::cout << "\tGot ECHO descriptor: " << timer.elapsed() << "(s)" <<  std::endl;
 
-        if( DiskSupport.set ) F = ResampleSignalDisk( F , OutResolution.value , OutResolution.value );
-        else                  F = ResampleSignal( F , OutResolution.value , OutResolution.value );
+        if( NoDiskSupport.set ) F = ResampleSignal( F , OutResolution.value , OutResolution.value );
+        else                    F = ResampleSignalDisk( F , OutResolution.value , OutResolution.value );
 
         F = TransposeSignal( F );
 
@@ -342,11 +447,13 @@ int main( int argc , char* argv[] )
         ShowUsage( argv[0] );
         return EXIT_FAILURE;
     }
-    if( !OutResolution.set ) OutResolution.value = RadialBins.value * 2 + 1;
+    if( !OutResolution.set ) OutResolution.value = HistogramRadius.value * 2 + 1;
 
     Miscellany::Timer timer;
     run< float >();
-    if( Verbose.set ) std::cout << "Got desriptor(s) in: " << timer.elapsed() << " (s)" <<  std::endl;
+    if( Verbose.set )
+        if( SourceNode.value<1 ) std::cout << "Got desriptors in: " << timer.elapsed() << "(s)" <<  std::endl;
+        else                     std::cout << "Got desriptor in: " << timer.elapsed() << "(s)" <<  std::endl;
 
     return 1;
 }

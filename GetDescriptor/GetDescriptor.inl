@@ -100,12 +100,12 @@ unsigned int computeTriangleWeights( const Point2D< double > v[] , const double 
 }
 
 template< class Real >
-void tangentsAtVertices( const TriMesh<Real> & tMesh,  const std::vector<Point2D<double>>& triangleGradients, const std::vector<double>& sDistances, std::vector<Point2D<double> >& logTan, std::vector<double>& mags)
+void tangentsAtVertices( const TriMesh< Real > &tMesh , const std::vector< double > &signal , const std::vector< std::pair< Point2D< double > , Point2D< double > > > &dualFrameFields , const std::vector< double > &sDistances , std::vector< Point2D< double > > &logTan , std::vector< double > &mags )
 {
     std::vector< Point2D< double > > triDir;
     const std::vector< Point3D< Real > > &vertices = tMesh.vertices();
     const std::vector< TriangleIndex > &triangles = tMesh.triangles();
-    triDir.resize ( triangles.size() );
+    triDir.resize( triangles.size() );
 
     for( int l=0 ; l<triangles.size(); l++)
     {
@@ -115,21 +115,10 @@ void tangentsAtVertices( const TriMesh<Real> & tMesh,  const std::vector<Point2D
         if( degenerate ) triDir[l][0] = triDir[l][1] = std::numeric_limits<Real>::max();
         else
         {
-            Point2D<double> tangentX = triangleGradients[l] / std::sqrt (tMesh.metricSquareNorm (l, triangleGradients[l]));
-
-            Point2D<double> tangentY = tMesh.metricRotate90 (l, tangentX);
-
-            // Compute logarithm direction
             Point2D< double > geoGrad = tMesh.getMetricGradient( l , sDistances[ triangles[l][0] ] , sDistances[ triangles[l][1] ] , sDistances[ triangles[l][2]] );
-
-            geoGrad /= std::sqrt(tMesh.metricSquareNorm(l, geoGrad)) * -1;
-
-            double detR = tangentX[0] * tangentY[1] - tangentX[1] * tangentY[0];
-
-            triDir[l][0] = (tangentY[1] * geoGrad[0] - tangentY[0] * geoGrad[1]) / detR;
-            triDir[l][1] = (tangentX[0] * geoGrad[1] - tangentX[1] * geoGrad[0]) / detR;
-
-         
+            geoGrad /= std::sqrt( tMesh.metricSquareNorm( l , geoGrad ) ) * -1;
+            triDir[l][0] = Point2D< double >::Dot( dualFrameFields[l].first , geoGrad );
+            triDir[l][1] = Point2D< double >::Dot( dualFrameFields[l].second , geoGrad );
         }
     }
 
@@ -138,45 +127,44 @@ void tangentsAtVertices( const TriMesh<Real> & tMesh,  const std::vector<Point2D
 
     for( int l=0 ; l<vertices.size() ; l++ )
     {
-        if (sDistances[l] >= std::numeric_limits<double>::max ()) logTan[l] = Point2D<double> ( std::numeric_limits<double>::max (), std::numeric_limits<double>::max () );
+        if( sDistances[l]>=std::numeric_limits< double >::max() ) logTan[l] = Point2D< double >( std::numeric_limits< double >::max() , std::numeric_limits<double>::max() );
         else
         {
-            std::vector<int> starTris = tMesh.vertexStarList(l);
+            const std::vector< int > &starTris = tMesh.vertexStarList(l);
             double totalArea = 0.0;
             int tCount = 0;
-            for (int k = 0; k < starTris.size (); k++)
+            for( int k=0 ; k<starTris.size() ; k++ )
             {
-                if (triDir[starTris[k]][0] < std::numeric_limits<Real>::max ())
+                if( triDir[starTris[k]][0]<std::numeric_limits<Real>::max() )
                 {
                     
-                    tCount ++;
-                    double tArea = tMesh.triangleArea (starTris[k]);
+                    tCount++;
+                    double tArea = tMesh.triangleArea( starTris[k] );
 
                     logTan[l] += triDir[starTris[k]] * tArea;
 
-                    mags[l] += std::sqrt( tMesh.metricSquareNorm (starTris[k], triangleGradients[starTris[k]]) ) * tArea;
+                    mags[l] += signal[ starTris[k] ] * tArea;
                     totalArea += tArea;
                 } 
             }
 
-            if (tCount > 0)
+            if( tCount>0 )
             {
-                logTan[l] *= sDistances[l] / std::sqrt(logTan[l].squareNorm ());
+                logTan[l] *= sDistances[l] / std::sqrt( logTan[l].squareNorm() );
                 mags[l] /= totalArea;
             }
             else
             {
-                logTan[l] = Point2D<double> ( std::numeric_limits<double>::max (), std::numeric_limits<double>::max () );
+                logTan[l] = Point2D< double >( std::numeric_limits<double>::max () , std::numeric_limits<double>::max () );
             }
         }
     }
 }
 
 
-
-
-template< class Real, unsigned int nSamples>
-RegularGrid< Real , 2 > echo( const TriMesh< Real > &tMesh , const std::vector< Point2D< double > >& logTan , std::vector< double > &mags , double supportRadius, unsigned int descriptorRadius )
+// [NOTE] The argument to the weight function should be the squared value (distance)
+template< class Real , unsigned int NSamples , typename WeightFunction >
+RegularGrid< Real , 2 > echo( const TriMesh< Real > &tMesh , const std::vector< Point2D< double > >& logTan , std::vector< double > &mags , double supportRadius , unsigned int descriptorRadius , WeightFunction W )
 {
    auto Mod = []( int i , unsigned int modulus )
    {
@@ -192,12 +180,13 @@ RegularGrid< Real , 2 > echo( const TriMesh< Real > &tMesh , const std::vector< 
    F.resize( res , res );
    for( int i=0 ; i<F.resolution() ; i++ ) F[i] = 0;
 
+
    // The mesh-to-descriptor scale factor
    Real surface2descriptor = (Real)( descriptorRadius / supportRadius );
 
    // Gaussian fall-off
    Real splatRad = (Real)( 1.3 * descriptorRadius / 5.0 );
-   Real sigma2 = (Real)( splatRad * splatRad / std::log (0.05) ); 
+   Real one_over_sigma2 = (Real)( 1. / ( splatRad * splatRad / -std::log(0.05) ) ); 
    int win = (int) std::ceil (splatRad);
 
    double rho = surface2descriptor * supportRadius;
@@ -207,7 +196,7 @@ RegularGrid< Real , 2 > echo( const TriMesh< Real > &tMesh , const std::vector< 
       // Check if triangle is on boundary of ball
       bool degenerate = false;
       int nOut = 0;
-      for (int i = 0; i < 3; i++)
+      for( int i=0 ; i<3 ; i++ )
       {
           double n2T = logTan[ triangles[l][i] ].squareNorm ();
 
@@ -224,43 +213,28 @@ RegularGrid< Real , 2 > echo( const TriMesh< Real > &tMesh , const std::vector< 
       }
 
 
-      if (!degenerate && nOut<3)
+      if( !degenerate && nOut<3 )
       { 
           Point2D< double > nodes[] = { logTan[ triangles[l][0] ] * surface2descriptor , logTan[ triangles[l][1] ] * surface2descriptor , logTan[ triangles[l][2] ] * surface2descriptor };
-
           double phi[] = { mags[ triangles[l][0] ] , mags[ triangles[l][1] ], mags[ triangles[l][2] ] };
 
-         QuadratureSample q[nSamples];
+         QuadratureSample q[NSamples];
 
-         unsigned int qCount = computeTriangleWeights< nSamples >( nodes , phi , rho , q );
+         unsigned int qCount = computeTriangleWeights< NSamples >( nodes , phi , rho , q );
 
-         Point2D<int> rllc, rurc;
+         Point2D< int > rllc, rurc;
          splatBoundingBox( rllc, rurc, nodes[0] , nodes[1] , nodes[2] , descriptorRadius , win );
 
-         for (int x0 = rllc[0]; x0 <= rurc[0]; x0++ )
-         {
-            for (int y0 = rllc[1]; y0 <= rurc[1]; y0++)
-            {
-               if ( ( x0 * x0 + y0 * y0 ) <= ( ( descriptorRadius + 0.5) * (descriptorRadius + 0.5) ) )
-               {
-
-                  double value = 0;
-                  for( int k=0 ; k<(int)qCount ; k++ )
-                  { 
-                     value += std::exp ( ( Point2D< double >( x0 , y0 ) - q[k].position ).squareNorm () / sigma2 ) * q[k].integral;
- 
-                     F ( Mod( x0 + descriptorRadius, F.res(0) ) , Mod (y0 + descriptorRadius, F.res(1) ) ) += (Real) ( value * tMesh.triangleArea (l) );
-                  }
-
-          	   }
-                
-            }
-            
-         }
-      
-      } // end if (!degenerate)
-      
-   } // end for (int l = 0; l < tMesh.triangles (); l++)
+         for( int x0=rllc[0] ; x0<=rurc[0] ; x0++ ) for( int y0=rllc[1] ; y0<=rurc[1] ; y0++ )
+             if( ( x0*x0 + y0*y0 ) <= ( (descriptorRadius + 0.5) * (descriptorRadius + 0.5) ) )
+             {
+                 double value = 0;
+                 for( int k=0 ; k<(int)qCount ; k++ )
+                     value += W( ( Point2D< double >( x0 , y0 ) - q[k].position ).squareNorm() * one_over_sigma2 ) * q[k].integral;
+                 F( Mod( x0 + descriptorRadius, F.res(0) ) , Mod (y0 + descriptorRadius, F.res(1) ) ) += (Real) ( value * tMesh.triangleArea(l) );
+             }
+      } // end if( !degenerate )
+   } // end for( int l=0 ; l<tMesh.triangles() ; l++ )
    
    return F;
 }
@@ -270,8 +244,8 @@ RegularGrid< Real , 2 > echo( const TriMesh< Real > &tMesh , const std::vector< 
 static long long verticesInNeighborhood = 0;
 #endif // DEBUG_DESCRIPTOR
 
-template< class Real , unsigned int nSamples=7 >
-RegularGrid< Real , 2 > echoFromDistances( const TriMesh< Real > &tMesh , const std::vector< Point2D< double > > &triangleGradients , const std::vector< double > sDistances , double supportRadius , unsigned int descriptorRadius )
+template< class Real , unsigned int NSamples , typename WeightFunction >
+RegularGrid< Real , 2 > echoFromDistances( const TriMesh< Real > &tMesh , const std::vector< double > &signal , const std::vector< std::pair< Point2D< double > , Point2D< double > > > &dualFrameFields , const std::vector< double > sDistances , double supportRadius , unsigned int descriptorRadius , WeightFunction W )
 {
 #ifdef DEBUG_DESCRIPTOR
     for( int i=0 ; i<sDistances.size() ; i++ ) if( sDistances[i]<std::numeric_limits< double >::max() ) verticesInNeighborhood++;
@@ -281,40 +255,40 @@ RegularGrid< Real , 2 > echoFromDistances( const TriMesh< Real > &tMesh , const 
     std::vector< Point2D< double > > logTan;
     std::vector< double > mags;
 
-    tangentsAtVertices( tMesh , triangleGradients , sDistances , logTan , mags );
+    tangentsAtVertices( tMesh , signal , dualFrameFields , sDistances , logTan , mags );
 
     // Compute descriptor
-    return echo< Real , nSamples >( tMesh , logTan , mags , supportRadius , descriptorRadius );
+    return echo< Real , NSamples >( tMesh , logTan , mags , supportRadius , descriptorRadius , W );
 }
 
-template< class Real , unsigned int nSamples=7 >
-RegularGrid< Real , 2 > spectralEcho( const TriMesh< Real > &tMesh , const Spectrum< double > &spectrum , const std::vector< Point2D< double > > &triangleGradients , int nodeIndex , double supportRadius, unsigned int descriptorRadius )
+template< class Real , unsigned int NSamples , typename WeightFunction >
+RegularGrid< Real , 2 > spectralEcho( const TriMesh< Real > &tMesh , const Spectrum< double > &spectrum , const std::vector< double > &signal , const std::vector< std::pair< Point2D< double > , Point2D< double > > > &dualFrameField , int nodeIndex , double supportRadius, unsigned int descriptorRadius , WeightFunction W )
 {
     // Compute surface distances
     std::vector< double > sDistances = tMesh.computeSpectralDistancesAbout( spectrum , nodeIndex , supportRadius );
-    return echoFromDistances( tMesh , triangleGradients , sDistances , supportRadius , descriptorRadius );
+    return echoFromDistances< Real , NSamples >( tMesh , signal , dualFrameField , sDistances , supportRadius , descriptorRadius , W );
 }
 
-template< class Real , unsigned int nSamples=7 >
-RegularGrid< Real , 2 > geodesicEcho( const TriMesh< Real > &tMesh , const std::vector< Point2D< double > > &triangleGradients , int nodeIndex , double supportRadius , unsigned int descriptorRadius )
+template< class Real , unsigned int NSamples , typename WeightFunction >
+RegularGrid< Real , 2 > geodesicEcho( const TriMesh< Real > &tMesh , const std::vector< double > &signal , const std::vector< std::pair< Point2D< double > , Point2D< double > > > &dualFrameField , int nodeIndex , double supportRadius , unsigned int descriptorRadius , WeightFunction W )
 {
     // Compute surface distances
     std::vector< double > sDistances = tMesh.computeGeodesicsAbout( nodeIndex , (float)supportRadius );
-    return echoFromDistances( tMesh , triangleGradients , sDistances , supportRadius , descriptorRadius );
+    return echoFromDistances< Real , NSamples >( tMesh , signal , dualFrameField , sDistances , supportRadius , descriptorRadius , W );
 }
 
-template< class Real , unsigned int nSamples=7 >
-RegularGrid< Real , 2 > spectralEcho( const TriMesh< Real > &tMesh , const Spectrum< double > &spectrum , const std::vector< Point2D< double > > &triangleGradients , std::pair< int , Point3D< double > > P , double supportRadius , unsigned int descriptorRadius )
+template< class Real , unsigned int NSamples , typename WeightFunction >
+RegularGrid< Real , 2 > spectralEcho( const TriMesh< Real > &tMesh , const Spectrum< double > &spectrum , const std::vector< double > &signal , const std::vector< std::pair< Point2D< double > , Point2D< double > > > &dualFrameField , std::pair< int , Point3D< double > > P , double supportRadius , unsigned int descriptorRadius , WeightFunction W )
 {
     // Compute surface distances
     std::vector< double > sDistances = tMesh.computeSpectralDistancesAbout ( spectrum , P , supportRadius );
-    return echoFromDistances( tMesh , triangleGradients , sDistances , supportRadius , descriptorRadius );
+    return echoFromDistances< Real , NSamples >( tMesh , signal , dualFrameField , sDistances , supportRadius , descriptorRadius , W );
 }
 
-template< class Real , unsigned int nSamples=7 >
-RegularGrid< Real , 2 > geodesicEcho( const TriMesh< Real > &tMesh , const std::vector< Point2D< double > > &triangleGradients , std::pair< int , Point3D< double > > P , double supportRadius , unsigned int descriptorRadius )
+template< class Real , unsigned int NSamples , typename WeightFunction >
+RegularGrid< Real , 2 > geodesicEcho( const TriMesh< Real > &tMesh , const std::vector< double > &signal , const std::vector< std::pair< Point2D< double > , Point2D< double > > > &dualFrameField , std::pair< int , Point3D< double > > P , double supportRadius , unsigned int descriptorRadius , WeightFunction W )
 {
     // Compute surface distances
-    std::vector< double > sDistances = tMesh.computeGeodesicsAbout  ( P , (float)supportRadius );
-    return echoFromDistances( tMesh , triangleGradients , sDistances , supportRadius , descriptorRadius );
+    std::vector< double > sDistances = tMesh.computeGeodesicsAbout( P , (float)supportRadius );
+    return echoFromDistances< Real , NSamples >( tMesh , signal , dualFrameField , sDistances , supportRadius , descriptorRadius , W );
 }

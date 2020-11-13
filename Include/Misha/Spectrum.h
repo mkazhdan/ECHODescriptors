@@ -292,8 +292,8 @@ Real Spectrum< Real >::spectralDistance( unsigned int i , unsigned int j , int b
 {
 	Real distance = (Real)0;
 	beginE = std::max< int >( beginE , 0 );
-	endE = std::min< int >( endE , _eigenvectors.size() );
-	for( unsigned int k=beginE ; k<endE ; k++ )
+	endE = std::min< int >( endE , (int)_eigenvectors.size() );
+	for( int k=beginE ; k<endE ; k++ )
 	{
 		auto& v = _eigenvectors[k];
 		Real temp = ( v[i]-v[j] );
@@ -306,8 +306,8 @@ Real Spectrum< Real >::spectralDistance( unsigned int i , TriangleIndex tri , Po
 {
 	Real distance = (Real)0;
 	beginE = std::max< int >( beginE , 0 );
-	endE = std::min< int >( endE , _eigenvectors.size() );
-	for( unsigned int k=beginE ; k<endE ; k++ )
+	endE = std::min< int >( endE , (int)_eigenvectors.size() );
+	for( int k=beginE ; k<endE ; k++ )
 	{
 		auto& v = _eigenvectors[k];
 		Real v1 = v[i] , v2 = v[ tri[0] ] * weights[0] + v[ tri[1] ] * weights[1] + v[ tri[2] ] * weights[2];

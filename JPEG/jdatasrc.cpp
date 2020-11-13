@@ -32,8 +32,9 @@ typedef struct {
 
 typedef my_source_mgr * my_src_ptr;
 
-#if 1
+#if 0
 #define INPUT_BUF_SIZE  4096	/* choose an efficiently fread'able size */
+#else
 // Misha modified for bigger block I/O
 #define INPUT_BUF_SIZE  1<<16	/* choose an efficiently fread'able size */
 #endif

@@ -62,11 +62,7 @@ TriMesh< Real >::TriMesh( const std::vector< Point3D< Real > > &vertices , const
 template< class Real >
 Real TriMesh< Real >::triangleArea( int l ) const
 {
-#ifdef PRECOMPUTE_TRIANGLE_AREAS
     return _triangleAreas[l];
-#else // !PRECOMPUTE_TRIANGLE_AREAS
-    return std::sqrt( std::fabs( _triangleMetrics[l][0] * _triangleMetrics[l][2] - _triangleMetrics[l][1] * _triangleMetrics[l][1] ) ) / 2.;
-#endif // PRECOMPUTE_TRIANGLE_AREAS
 }
 
 template< class Real >
@@ -74,11 +70,7 @@ Real TriMesh< Real >::totalArea( void ) const
 {
     Real A = 0.0;
 
-#ifdef PRECOMPUTE_TRIANGLE_AREAS
     for( int l=0 ; l<_triangleAreas.size() ; l++ ) A += _triangleAreas[l];
-#else // !PRECOMPUTE_TRIANGLE_AREAS
-    for( int l=0 ; l<_triangles.size() ; l++ ) A += triangleArea(l);
-#endif // PRECOMPUTE_TRIANGLE_AREAS
 
     return A;
 }
@@ -100,9 +92,7 @@ template< typename TriangleSquareEdgeLengthFunctor >
 void TriMesh< Real >::initMetricsFromSquareEdgeLengths( TriangleSquareEdgeLengthFunctor F )
 {
     _triangleMetrics.resize( _triangles.size() );
-#ifdef PRECOMPUTE_TRIANGLE_AREAS
     _triangleAreas.resize( _triangles.size() );
-#endif // PRECOMPUTE_TRIANGLE_AREAS
 
 #pragma omp parallel for
     for( int i=0 ; i<_triangles.size() ; i++ )
@@ -113,9 +103,7 @@ void TriMesh< Real >::initMetricsFromSquareEdgeLengths( TriangleSquareEdgeLength
         _triangleMetrics[i][1] = ( squareEdgeLengths[2] + squareEdgeLengths[1] - squareEdgeLengths[0] ) / 2;
         _triangleMetrics[i][2] = squareEdgeLengths[1];
 
-#ifdef PRECOMPUTE_TRIANGLE_AREAS
-        _triangleAreas[i] = std::sqrt( std::fabs( _triangleMetrics[i][0] * _triangleMetrics[i][2] - _triangleMetrics[i][1] * _triangleMetrics[i][1] ) ) / 2.;
-#endif // PRECOMPUTE_TRIANGLE_AREAS
+        _triangleAreas[i] = (Real)( std::sqrt( std::fabs( _triangleMetrics[i][0] * _triangleMetrics[i][2] - _triangleMetrics[i][1] * _triangleMetrics[i][1] ) ) / 2. );
     }
 }
 
@@ -185,6 +173,15 @@ void TriMesh< Real >::metricGradient ( const std::vector< double >& Implicit , s
 
 
 // Metric dot products
+template< typename Real >
+SquareMatrix< double , 2 > TriMesh< Real >::triangleMetric( int l ) const
+{
+    SquareMatrix< double , 2 > m;
+    m(0,0) = _triangleMetrics[l][0];
+    m(1,1) = _triangleMetrics[l][2];
+    m(0,1) = m(1,0) = _triangleMetrics[l][1];
+    return m;
+}
 template< class Real >
 double TriMesh< Real >::metricDot( int l , const Point2D< double >& w1, const Point2D< double >& w2) const
 {
@@ -192,9 +189,7 @@ double TriMesh< Real >::metricDot( int l , const Point2D< double >& w1, const Po
     double b = _triangleMetrics[l][1];
     double c = _triangleMetrics[l][2];
 
-
-    return (a * w1[0] + b * w1[1]) * w2[0] + (b * w1[0] + c * w1[1]) * w2[1];
-  
+    return (a * w1[0] + b * w1[1]) * w2[0] + (b * w1[0] + c * w1[1]) * w2[1];  
 }
 
 template< class Real >
@@ -204,7 +199,7 @@ double TriMesh< Real >::metricSquareNorm( int l, const Point2D< double >& w) con
 }
 
 template< class Real >
-Point2D< double > TriMesh< Real >::metricRotate90 ( int l , const Point2D< double >& w) const
+Point2D< double > TriMesh< Real >::metricRotate90( int l , const Point2D< double > &w ) const
 {
 
     double a = _triangleMetrics[l][0];
@@ -213,18 +208,18 @@ Point2D< double > TriMesh< Real >::metricRotate90 ( int l , const Point2D< doubl
 
     double detRoot = std::sqrt(a * c - b * b);
 
-    if (detRoot > 0)
+    if( detRoot>0 )
     {
 
        double alphaR = -(b * w[0] + c * w[1]) / detRoot;
 
        double betaR = (a * w[0] + b * w[1]) / detRoot;
 
-       return Point2D< double >(alphaR, betaR);
+       return Point2D< double >( alphaR , betaR );
     }
     else
     {
-       return Point2D< double > (0, 0);
+       return Point2D< double >(0, 0);
     }
 }
 

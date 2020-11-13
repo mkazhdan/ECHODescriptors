@@ -47,7 +47,7 @@ public:
   Heap( std::vector<real>*    keys) { initialize(keys);}
   ~Heap() {}
 
-  void initialize( std::vector<real>*    keys) {	keys_ = keys; resize (keys_->size()); std::fill(flags_.begin(),flags_.end(),false);}
+  void initialize( std::vector<real>*    keys) {	keys_ = keys; resize ((int)keys_->size()); std::fill(flags_.begin(),flags_.end(),false);}
   void resize( int size) { flags_.resize(size); }
   bool isInHeap( int idx) const { return flags_[idx];}
   void removeFromHeap( int idx) { flags_[idx]=false;}

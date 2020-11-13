@@ -148,7 +148,7 @@ private:
         const Vector& evals = decomp.eigenvalues();
         const Matrix& evecs = decomp.eigenvectors();
 
-        SortEigenvalue<Scalar, SelectionRule> sorting(evals.data(), evals.size());
+        SortEigenvalue<Scalar, SelectionRule> sorting(evals.data(), (int)evals.size());
         std::vector<int> ind = sorting.index();
 
         // For BOTH_ENDS, the eigenvalues are sorted according

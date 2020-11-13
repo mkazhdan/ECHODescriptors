@@ -104,7 +104,7 @@ The default value for this parameter is 5.
 </dt><dd> This integer specifies the resolution to which the ECHO descriptor will be resampled prior to output.<BR>
 If no value is specfied, the resolution of the output will match the resolution of the histogram.
 
-</dd><dt>[<b>--dev</b> &lt;<i>deviation for color mapping</i>&gt;]
+</dd><dt>[<b>--dev</b> &lt;<i>standard deviation for color mapping</i>&gt;]
 </dt><dd> If the ECHO descriptor is written out as an image. If the prescribed deviation <I>dev</I> is negative, an ECHO value of <I>v</I> is computed to the color whose HSV representation is (0,0,<I>v</I>/(3x&sigma;)), where &sigma; is the standard deviation of ECHO values over the descriptor. If the prescribed deviation deviation is positiven, the HSV representation is (4&pi;/3&times;<I>dev</I>/&sigma;,1,<I>v</I>/(3&times;&sigma;)).<BR>
 The default value for this parameter is -1.
 
@@ -137,9 +137,9 @@ A visualization of the descriptor at vertex 1000 of the mesh can be obtained by 
 <blockquote><code>% GetDescriptor --in wolf0.ply --spec wolf0.spec --vertex 1000 --out wolf0.1000.jpeg --hRadius 10 --resolution 1024 --dev 0.005--verbose</code></blockquote>
 This produces a 1024&times;1024 JPEG (color) image visualizing the ECHO descriptor computed over a histogram of size 21&times;21. Running times for the individual steps of the computation are written out to the command prompt. (Note that as the spectrum is provided as input the time for obtaining the spectrum is just the time required to read it from disk.)<BR>
 
-A more accurate break-down or run-time performance can be obtained by computing the ECHO descriptors at 10000 random positions on the mesh:
+A more accurate break-down of run-time performance can be obtained by computing the ECHO descriptors at 10000 random positions on the mesh:
 <blockquote><code>% GetDescriptor --in wolf0.ply --hRadius 10 --vertex -10000 --verbose</code></blockquote>
-Note that since the spectrum is not provided as input, the time for obtaining the spectrum is the time required for constructing and solving the associated generalized eigenproblem.)
+Since the spectrum is not provided as input, the time for obtaining the spectrum is the time required for constructing and solving the associated generalized eigenproblem.
 
 </DETAILS>
 </dl>

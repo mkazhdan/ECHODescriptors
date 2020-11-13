@@ -29,8 +29,6 @@ DAMAGE.
 #ifndef TRIMESH_INCLUDED
 #define TRIMESH_INCLUDED
 
-#define PRECOMPUTE_TRIANGLE_AREAS
-
 #include <vector>
 #include <omp.h>
 #include <limits.h>
@@ -59,9 +57,7 @@ protected:
 	const std::vector< Point3D< Real > > &_vertices;
 	const std::vector< TriangleIndex > &_triangles;
 
-#ifdef PRECOMPUTE_TRIANGLE_AREAS
 	std::vector< Real > _triangleAreas;
-#endif // PRECOMPUTE_TRIANGLE_AREAS
 
 	std::vector< std::vector< TriangleIndex > > _vertexStars;
 	std::vector< std::vector< int > > _starTriangles;
@@ -91,6 +87,7 @@ public:
 	// The functor takes in a TriangleIndex and outputs a Point3D< double > giving the square lengths of the edges opposite the indexed vertices
 	template< typename TriangleSquareEdgeLengthFunctor >
 	void initMetricsFromSquareEdgeLengths( TriangleSquareEdgeLengthFunctor F );
+	SquareMatrix< double , 2 > triangleMetric( int l ) const;
 
    // Gets value of gradient of implicit function in tangent space at triangles w.r.t. to defined metric
     Point2D< double > getMetricGradient( int l, const double phi1, const double phi2, const double phi3) const;

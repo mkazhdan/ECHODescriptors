@@ -384,7 +384,7 @@ namespace DGPC {
     Generator<Mesh>::initializeGamma(const Point& point)
     {
 
-      const int num = gamma_.size();
+      const int num = (int)gamma_.size();
       real phitot = 0;
 
       //For each node in gamma_
