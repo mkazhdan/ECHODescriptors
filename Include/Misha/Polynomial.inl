@@ -127,7 +127,6 @@ const double &Polynomial< 1 , Degree >::coefficient( unsigned int d ) const { re
 template< unsigned int Degree >
 double &Polynomial< 1 , Degree >::coefficient( unsigned int d ) { return _coefficient( &d , Degree ); }
 
-#if 1
 template< unsigned int Degree >
 double Polynomial< 1 , Degree >::operator()( double x ) const
 {
@@ -139,10 +138,6 @@ double Polynomial< 1 , Degree >::operator()( double x ) const
 	}
 	return value;
 }
-#else
-template< unsigned int Degree >
-double Polynomial< 1 , Degree >::operator()( double x ) const { return _evaluate( &x , Degree ); }
-#endif
 
 template< unsigned int Degree >
 Polynomial< 1 , Degree-1 > Polynomial< 1 , Degree >::d( unsigned int ) const
