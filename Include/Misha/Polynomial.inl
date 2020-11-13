@@ -130,11 +130,11 @@ double &Polynomial< 1 , Degree >::coefficient( unsigned int d ) { return _coeffi
 template< unsigned int Degree >
 double Polynomial< 1 , Degree >::operator()( double x ) const
 {
-	double value = 0 , tmp = 1;
-	for( unsigned int d=0 ; d<=Degree ; d++ )
+	double value = _coefficients[0] , tmp = 1;
+	for( unsigned int d=1 ; d<=Degree ; d++ )
 	{
-		value += tmp * _coefficients[d];
 		tmp *= x;
+		value += tmp * _coefficients[d];
 	}
 	return value;
 }
