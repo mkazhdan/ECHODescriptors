@@ -1,3 +1,6 @@
+
+<img src="/centaurCompare_aSym.png" width="100%">
+
 <center><h2>Echo Descriptors (Version 1.0)</h2></center>
 <center>
 <a href="#LINKS">links</a>
